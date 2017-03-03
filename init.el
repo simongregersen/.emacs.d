@@ -1,0 +1,201 @@
+;; initialization
+(require 'package)
+(setq package-enable-at-startup nil)
+(setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
+                         ("melpa" . "http://melpa.org/packages/")
+                         ("melpa-stable" . "http://stable.melpa.org/packages/")))
+(package-initialize)
+
+;; bootstrap and load use-package
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+(require 'use-package)
+
+;; appearance
+(use-package atom-dark-theme
+  :ensure t
+  :config
+  (load-theme 'atom-dark 'NO-CONFIRM))
+
+(use-package nyan-mode
+  :ensure t
+  :config
+  (nyan-mode))
+
+(use-package smartparens
+  :ensure t
+  :config
+  (show-paren-mode 1))
+
+(set-face-attribute 'default nil :height 90)     ; font size
+(setq frame-title-format '("" "%b @ %f"))        ; window title
+(setq inhibit-startup-message t)     ; dont show the GNU splash screen
+(transient-mark-mode t)              ; show selection from mark
+(tool-bar-mode 0)                    ; disable toolbar
+(menu-bar-mode 0)                    ; disable menu bar
+(scroll-bar-mode 0)                  ; disable scroll bar
+(blink-cursor-mode 0)                ; disable blinking cursor
+(mouse-avoidance-mode 'jump)         ; jump mouse away when typing
+(setq visible-bell 1)                ; turn off bip warnings
+(auto-compression-mode 1)            ; browse tar archives
+(put 'upcase-region 'disabled nil)   ; enable ``upcase-region''
+(put 'set-goal-column 'disabled nil) ; enable column positioning
+(setq case-fold-search t)            ; make search ignore case
+(global-linum-mode t)                ; global line numbers
+(fset 'yes-or-no-p 'y-or-n-p)        ; short-hand yes/no selection
+(ido-mode 1)                         ; interactive DO mode (better file opening and buffer switching)
+(setq-default indent-tabs-mode nil)  ; tabs over spaces
+
+;; misc. hooks
+(add-hook 'before-save-hook 'whitespace-cleanup) ; whitespace-cleanup on save
+
+;; autosave location (in $TMPDIR/emacs$UID/)
+(defconst emacs-tmp-dir (format "%s/%s%s/" temporary-file-directory "emacs" (user-uid)))
+
+(setq backup-directory-alist `((".*" . ,emacs-tmp-dir)))
+(setq auto-save-file-name-transforms `((".*" ,emacs-tmp-dir t)))
+(setq auto-save-list-file-prefix emacs-tmp-dir)
+
+;; auto completion
+(use-package company
+  :ensure t
+  :config
+  (setq company-idle-delay 0
+        company-echo-delay 0
+        company-dabbrev-downcase nil
+        company-minimum-prefix-length 3
+        ompany-tooltip-limit 20
+        company-selection-wrap-around t
+        company-transformers '(company-sort-by-occurrence
+                               company-sort-by-backend-importance))
+  (define-key company-mode-map (kbd "C-M-i") 'company-indent-or-complete-common)
+  (global-company-mode))
+(require 'color)
+(let ((bg (face-attribute 'default :background)))
+  (custom-set-faces
+   `(company-tooltip ((t (:inherit default :background ,(color-lighten-name bg 2)))))
+   `(company-scrollbar-bg ((t (:background ,(color-lighten-name bg 10)))))
+   `(company-scrollbar-fg ((t (:background ,(color-lighten-name bg 5)))))
+   `(company-tooltip-selection ((t (:inherit font-lock-function-name-face))))
+   `(company-tooltip-common ((t (:inherit font-lock-constant-face))))))
+
+;; project explorer
+(use-package neotree
+  :ensure t)
+
+;; printing
+(use-package ps-print
+  :defer t
+  :config
+  (setq ps-print-header nil)
+  (setq ps-paper-type 'a4)
+  (setq ps-print-color-p nil))
+
+;; LaTeX
+(use-package tex
+  :ensure auctex
+  :config
+  (setq TeX-auto-save t)
+  (setq TeX-parse-self t)
+  (setq TeX-save-query nil)
+  (setq TeX-PDF-mode t)
+  (add-hook 'LaTeX-mode-hook 'visual-line-mode)
+  (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+  (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+  (add-hook 'LaTeX-mode-hook 'turn-on-reftex))
+
+;; latex auto completion
+(use-package company-auctex
+  :ensure t
+  :config
+  (company-auctex-init))
+
+;; latex preview
+(use-package latex-preview-pane
+  :ensure t
+  :config
+  (add-hook 'LaTeX-mode-hook 'latex-preview-pane-mode)
+  (latex-preview-pane-enable))
+
+;; git
+(use-package magit
+  :ensure t
+  :pin melpa-stable
+  :config
+  (setq magit-refresh-status-buffer nil)
+  (setq vc-handled-backends nil)
+  :bind (("C-x g" . magit-status)
+         ("C-c g b" . magit-branch-and-checkout)
+         ("C-c g c" . magit-checkout)
+         ("C-c g l" . magit-log-all)))
+
+;; javascript/TypeScript
+(use-package js2-mode
+  :ensure t)
+
+;; source code navigation
+(use-package tern
+  :ensure t)
+
+(use-package company-tern
+  :ensure t
+  :config
+  (add-to-list 'company-backends '(company-tern)))
+
+(use-package tide
+  :ensure t
+  :config)
+
+;; angular2
+(use-package typescript-mode
+  :ensure t)
+(use-package ng2-mode
+  :ensure t)
+
+;; multiple cursors
+(use-package multiple-cursors
+  :ensure t
+  :bind (("C->" . mc/mark-next-like-this)
+         ("C-<" . mc/mark-previous-like-this)
+         ("M-<return>" . mc/mark-all-like-this)))
+
+;; snippets
+(use-package yasnippet
+  :ensure t
+  :init
+  (yas-global-mode 1)
+  :config
+  (add-to-list 'yas-snippet-dirs (locate-user-emacs-file "snippets")))
+
+;; common functions
+(defun load-init ()
+  "Runs load-file on ~/.emacs.d/init.el"
+  (interactive)
+  (load-file "~/.emacs.d/init.el"))
+
+(defun rename-file-and-buffer (new-name)
+  "Renames both current buffer and file it's visiting to NEW-NAME."
+  (interactive "sNew name: ")
+  (let ((name (buffer-name))
+        (filename (buffer-file-name)))
+    (if (not filename)
+        (message "Buffer '%s' is not visiting a file!" name)
+      (if (get-buffer new-name)
+          (message "A buffer named '%s' already exists!" new-name)
+        (progn
+          (rename-file name new-name 1)
+          (rename-buffer new-name)
+          (set-visited-file-name new-name)
+          (set-buffer-modified-p nil))))))
+
+(defun kill-other-buffers ()
+  "Kill all other buffers."
+  (interactive)
+  (mapc 'kill-buffer
+        (delq (current-buffer) (buffer-list))))
+
+(defun print ()
+  "Prints buffer"
+  (interactive)
+  (lpr-buffer))
