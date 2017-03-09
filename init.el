@@ -100,10 +100,14 @@
   (setq TeX-parse-self t)
   (setq TeX-save-query nil)
   (setq TeX-PDF-mode t)
+  (setq TeX-clean-confirm nil)
   (add-hook 'LaTeX-mode-hook 'visual-line-mode)
   (add-hook 'LaTeX-mode-hook 'flyspell-mode)
   (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-  (add-hook 'LaTeX-mode-hook 'turn-on-reftex))
+  (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
+  (add-hook 'LaTeX-mode-hook
+            (lambda ()
+              (add-hook 'kill-buffer-hook 'TeX-clean nil 'make-it-local))))
 
 ;; latex auto completion
 (use-package company-auctex
