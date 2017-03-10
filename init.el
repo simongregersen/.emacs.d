@@ -206,6 +206,15 @@
   (setq-default save-place t)
   (setq save-place-file (expand-file-name ".places" user-emacs-directory)))
 
+;; auto-indent
+;; use: (add-hook '<some-mode>-hook #'aggressive-indent-mode)
+(use-package aggressive-indent
+  :ensure t
+  :init
+  (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+  (add-hook 'html-mode-hook #'aggressive-indent-mode)
+  (add-hook 'css-mode-hook #'aggressive-indent-mode))
+
 ;; common functions
 (defun load-init ()
   "Runs load-file on ~/.emacs.d/init.el"
