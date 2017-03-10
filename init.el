@@ -174,6 +174,13 @@
   :config
   (add-to-list 'yas-snippet-dirs (locate-user-emacs-file "snippets")))
 
+;; move selections or a line  up and down
+(use-package drag-stuff
+  :ensure t
+  :config
+  (global-set-key (kbd "<C-S-down>") 'drag-stuff-down)
+  (global-set-key (kbd "<C-S-up>") 'drag-stuff-up))
+
 ;; common functions
 (defun load-init ()
   "Runs load-file on ~/.emacs.d/init.el"
@@ -223,6 +230,7 @@
         (delete-file filename)
         (kill-buffer buffer)
         (message "File '%s' successfully removed" filename)))))
+
 
 ;; custom key bindings
 (global-set-key (kbd "M-j")
