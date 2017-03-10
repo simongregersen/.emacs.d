@@ -63,7 +63,7 @@
               (kbd "C-d") 'comint-delchar-or-eof-or-kill-buffer)))
 
 ;; autosave location (in $TMPDIR/emacs$UID/)
-(defconst emacs-tmp-dir (format "%s/%s/" temporary-file-directory "backup"))
+(defconst emacs-tmp-dir (format "%s/%s/" user-emacs-directory "backup"))
 
 (setq backup-directory-alist `((".*" . ,emacs-tmp-dir)))
 (setq auto-save-file-name-transforms `((".*" ,emacs-tmp-dir t)))
