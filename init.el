@@ -202,6 +202,12 @@
   (global-set-key (kbd "<C-S-down>") 'drag-stuff-down)
   (global-set-key (kbd "<C-S-up>") 'drag-stuff-up))
 
+;; save point position between session
+(use-package saveplace
+  :config
+  (setq-default save-place t)
+  (setq save-place-file (expand-file-name ".places" user-emacs-directory)))
+
 ;; common functions
 (defun load-init ()
   "Runs load-file on ~/.emacs.d/init.el"

@@ -47,3 +47,6 @@ flycheck_*.el
 
 # ido
 ido.last
+
+# save session
+.places
