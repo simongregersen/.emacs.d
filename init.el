@@ -46,6 +46,7 @@
 (fset 'yes-or-no-p 'y-or-n-p)        ; short-hand yes/no selection
 (ido-mode 1)                         ; interactive DO mode (better file opening and buffer switching)
 (setq-default indent-tabs-mode nil)  ; tabs over spaces
+(setq initial-buffer-choice t)       ; initial buffer *scratch*
 
 ;; misc. hooks
 (add-hook 'before-save-hook 'whitespace-cleanup) ; whitespace-cleanup on save
