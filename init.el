@@ -179,6 +179,13 @@
 (use-package ng2-mode
   :ensure t)
 
+;; common lisp
+(use-package slime
+  :ensure t
+  :config
+  (setq inferior-lisp-program "/usr/local/bin/sbcl")
+  (setq slime-contribs '(slime-fancy)))
+
 ;; multiple cursors
 (use-package multiple-cursors
   :ensure t
