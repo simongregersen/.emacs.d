@@ -214,7 +214,8 @@
   :init
   (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
   (add-hook 'html-mode-hook #'aggressive-indent-mode)
-  (add-hook 'css-mode-hook #'aggressive-indent-mode))
+  (add-hook 'css-mode-hook #'aggressive-indent-mode)
+  (add-hook 'LaTeX-mode-hook #'aggressive-indent-mode))
 
 ;; common functions
 (defun load-init ()
