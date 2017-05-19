@@ -59,7 +59,6 @@
 (fset 'yes-or-no-p 'y-or-n-p)        ; short-hand yes/no selection
 (ido-mode 1)                         ; interactive DO mode (better file opening and buffer switching)
 (setq-default indent-tabs-mode nil)  ; tabs over spaces
-(setq initial-buffer-choice t)       ; initial buffer *scratch*
 
 ;; misc. hooks
 (add-hook 'before-save-hook 'whitespace-cleanup) ; whitespace-cleanup on save
@@ -224,7 +223,6 @@
   (add-hook 'css-mode-hook #'aggressive-indent-mode)
   (add-hook 'LaTeX-mode-hook #'aggressive-indent-mode))
 
-
 ;; common functions
 (defun load-init ()
   "Runs load-file on ~/.emacs.d/init.el"
@@ -307,3 +305,21 @@
                   (join-line -1)))
 
 (global-set-key (kbd "C-x C-k") 'delete-current-buffer-file)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (aggressive-indent multiple-cursors php-mode slime ng2-mode tide js2-mode magit latex-preview-pane company-auctex auctex neotree company smartparens nyan-mode doom-themes use-package))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(company-scrollbar-bg ((t (:background "#373c47"))))
+ '(company-scrollbar-fg ((t (:background "#2c3039"))))
+ '(company-tooltip ((t (:inherit default :background "#252830"))))
+ '(company-tooltip-common ((t (:inherit font-lock-constant-face))))
+ '(company-tooltip-selection ((t (:inherit font-lock-function-name-face)))))
