@@ -1,9 +1,14 @@
 ;; initialization
 (require 'package)
 (setq package-enable-at-startup nil)
-(setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
-                         ("melpa" . "http://melpa.org/packages/")
-                         ("melpa-stable" . "http://stable.melpa.org/packages/")))
+(setq package-archives
+      '(("GNU ELPA"     . "http://elpa.gnu.org/packages/")
+        ("MELPA Stable" . "https://stable.melpa.org/packages/")
+        ("MELPA"        . "https://melpa.org/packages/"))
+      package-archive-priorities
+      '(("MELPA Stable" . 10)
+        ("GNU ELPA"     . 5)
+        ("MELPA"        . 0)))
 (package-initialize)
 
 ;; bootstrap and load use-package
@@ -13,10 +18,18 @@
 (require 'use-package)
 
 ;; appearance
-(use-package atom-dark-theme
+(use-package all-the-icons)
+(use-package doom-themes
   :ensure t
+  :pin MELPA
   :config
-  (load-theme 'atom-dark 'NO-CONFIRM))
+  (setq doom-enable-bold nil
+        doom-enable-italic t
+        doom-one-brighter-comments t)
+  (add-hook 'find-file-hook #'doom-buffer-mode-maybe)
+  (add-hook 'minibuffer-setup-hook #'doom-brighten-minibuffer)
+  (doom-themes-neotree-config)
+  (load-theme 'doom-one 'NO-CONFORM))
 
 (use-package nyan-mode
   :ensure t
@@ -42,7 +55,7 @@
 (put 'upcase-region 'disabled nil)   ; enable ``upcase-region''
 (put 'set-goal-column 'disabled nil) ; enable column positioning
 (setq case-fold-search t)            ; make search ignore case
-(global-linum-mode t)                ; global line numbers
+(global-linum-mode 0)                ; global line numbers
 (fset 'yes-or-no-p 'y-or-n-p)        ; short-hand yes/no selection
 (ido-mode 1)                         ; interactive DO mode (better file opening and buffer switching)
 (setq-default indent-tabs-mode nil)  ; tabs over spaces
@@ -137,7 +150,6 @@
 ;; git
 (use-package magit
   :ensure t
-  :pin melpa-stable
   :config
   (defadvice magit-status (around magit-fullscreen activate)
     (window-configuration-to-register :magit-fullscreen)
@@ -160,15 +172,6 @@
 (use-package js2-mode
   :ensure t)
 
-;; source code navigation
-(use-package tern
-  :ensure t)
-
-(use-package company-tern
-  :ensure t
-  :config
-  (add-to-list 'company-backends '(company-tern)))
-
 (use-package tide
   :ensure t
   :config)
@@ -186,6 +189,10 @@
   (setq inferior-lisp-program "/usr/local/bin/sbcl")
   (setq slime-contribs '(slime-fancy)))
 
+;; php
+(use-package php-mode
+  :ensure t)
+
 ;; multiple cursors
 (use-package multiple-cursors
   :ensure t
@@ -200,13 +207,6 @@
   (yas-global-mode 1)
   :config
   (add-to-list 'yas-snippet-dirs (locate-user-emacs-file "snippets")))
-
-;; move selections or a line  up and down
-(use-package drag-stuff
-  :ensure t
-  :config
-  (global-set-key (kbd "<C-S-down>") 'drag-stuff-down)
-  (global-set-key (kbd "<C-S-up>") 'drag-stuff-up))
 
 ;; save point position between session
 (use-package saveplace
@@ -223,6 +223,7 @@
   (add-hook 'html-mode-hook #'aggressive-indent-mode)
   (add-hook 'css-mode-hook #'aggressive-indent-mode)
   (add-hook 'LaTeX-mode-hook #'aggressive-indent-mode))
+
 
 ;; common functions
 (defun load-init ()
@@ -268,6 +269,36 @@
         (delete-file filename)
         (kill-buffer buffer)
         (message "File '%s' successfully removed" filename)))))
+
+(global-set-key [remap goto-line] 'goto-line-with-feedback)
+(defun goto-line-with-feedback ()
+  "Show line numbers temporarily, while prompting for the line number input"
+  (interactive)
+  (unwind-protect
+      (progn
+        (linum-mode 1)
+        (goto-line (read-number "Goto line: ")))
+    (linum-mode -1)))
+
+(defun move-line-down ()
+  (interactive)
+  (let ((col (current-column)))
+    (save-excursion
+      (forward-line)
+      (transpose-lines 1))
+    (forward-line)
+    (move-to-column col)))
+
+(defun move-line-up ()
+  (interactive)
+  (let ((col (current-column)))
+    (save-excursion
+      (forward-line)
+      (transpose-lines -1))
+    (move-to-column col)))
+
+(global-set-key (kbd "<C-S-down>") 'move-line-down)
+(global-set-key (kbd "<C-S-up>") 'move-line-up)
 
 ;; custom key bindings
 (global-set-key (kbd "M-j")
