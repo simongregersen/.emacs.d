@@ -1,6 +1,5 @@
-;;; package --- Simon Gregersen's init.el
+;;; package --- my init.el
 ;;; Commentary:
-
 ;;; Code:
 
 ;; initialization
@@ -24,21 +23,24 @@
 
 ;; local library
 (add-to-list 'load-path (concat user-emacs-directory "lisp"))
-
 (let ((default-directory (concat user-emacs-directory "lib")))
   (normal-top-level-add-subdirs-to-load-path))
 
 ;; appearance
 (use-package all-the-icons) ; 'M-x all-the-icons-install-fonts' to install resource fonts
-(use-package doom-themes
-  :ensure t
-  :config
-  (setq doom-themes-enable-bold nil
-        doom-themes-enable-italic t)
-  (add-hook 'find-file-hook #'doom-buffer-mode-maybe)
-  (add-hook 'minibuffer-setup-hook #'doom-brighten-minibuffer)
-  (doom-themes-neotree-config)
-  (load-theme 'doom-one 'NO-CONFORM))
+(use-package blackboard-theme
+  :ensure t)
+
+(set-language-environment "UTF-8")
+(set-default-coding-systems 'utf-8-unix)
+
+;; set a default font
+(when (member "DejaVu Sans Mono" (font-family-list))
+  (set-face-attribute 'default nil :font "DejaVu Sans Mono"))
+
+;; specify font for all unicode characters
+(when (member "Symbola" (font-family-list))
+  (set-fontset-font t 'unicode "Symbola" nil 'prepend))
 
 (set-face-attribute 'default nil :height 90)     ; font size
 (setq frame-title-format '("" "%b @ %f"))        ; window title
@@ -226,7 +228,7 @@
 ;; load remaining lisp
 (load "languages")
 (load "functions")
-(setq custom-file "custom.el")
+(setq custom-file (concat user-emacs-directory (convert-standard-filename "lisp/custom.el")))
 (load custom-file)
 
 ;;; init.el ends here
