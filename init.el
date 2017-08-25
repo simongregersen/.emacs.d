@@ -1,3 +1,8 @@
+;;; package --- Simon Gregersen's init.el
+;;; Commentary:
+
+;;; Code:
+
 ;; initialization
 (require 'package)
 (setq package-enable-at-startup nil)
@@ -17,29 +22,23 @@
   (package-install 'use-package))
 (require 'use-package)
 
+;; local library
+(add-to-list 'load-path (concat user-emacs-directory "lisp"))
+
+(let ((default-directory (concat user-emacs-directory "lib")))
+  (normal-top-level-add-subdirs-to-load-path))
+
 ;; appearance
-(use-package all-the-icons)
+(use-package all-the-icons) ; 'M-x all-the-icons-install-fonts' to install resource fonts
 (use-package doom-themes
   :ensure t
-  :pin MELPA
   :config
-  (setq doom-enable-bold nil
-        doom-enable-italic t
-        doom-one-brighter-comments t)
+  (setq doom-themes-enable-bold nil
+        doom-themes-enable-italic t)
   (add-hook 'find-file-hook #'doom-buffer-mode-maybe)
   (add-hook 'minibuffer-setup-hook #'doom-brighten-minibuffer)
   (doom-themes-neotree-config)
   (load-theme 'doom-one 'NO-CONFORM))
-
-(use-package nyan-mode
-  :ensure t
-  :config
-  (nyan-mode))
-
-(use-package smartparens
-  :ensure t
-  :config
-  (show-paren-mode 1))
 
 (set-face-attribute 'default nil :height 90)     ; font size
 (setq frame-title-format '("" "%b @ %f"))        ; window title
@@ -54,25 +53,25 @@
 (auto-compression-mode 1)            ; browse tar archives
 (put 'upcase-region 'disabled nil)   ; enable ``upcase-region''
 (put 'set-goal-column 'disabled nil) ; enable column positioning
+(setq column-number-mode t)          ; show column number
 (setq case-fold-search t)            ; make search ignore case
 (global-linum-mode 0)                ; global line numbers
 (fset 'yes-or-no-p 'y-or-n-p)        ; short-hand yes/no selection
 (ido-mode 1)                         ; interactive DO mode (better file opening and buffer switching)
 (setq-default indent-tabs-mode nil)  ; tabs over spaces
 
+(use-package nyan-mode
+  :ensure t
+  :config
+  (nyan-mode))
+
+(use-package flycheck
+  :ensure t
+  :config
+  (add-hook 'after-init-hook #'global-flycheck-mode))
+
 ;; misc. hooks
 (add-hook 'before-save-hook 'whitespace-cleanup) ; whitespace-cleanup on save
-
-;; kill terminated shell buffer
-(defun comint-delchar-or-eof-or-kill-buffer (arg)
-  (interactive "p")
-  (if (null (get-buffer-process (current-buffer)))
-      (kill-buffer)
-    (comint-delchar-or-maybe-eof arg)))
-(add-hook 'shell-mode-hook
-          (lambda ()
-            (define-key shell-mode-map
-              (kbd "C-d") 'comint-delchar-or-eof-or-kill-buffer)))
 
 ;; autosave location (in $TMPDIR/emacs$UID/)
 (defconst emacs-tmp-dir (format "%s/%s/" user-emacs-directory "backup"))
@@ -80,6 +79,18 @@
 (setq backup-directory-alist `((".*" . ,emacs-tmp-dir)))
 (setq auto-save-file-name-transforms `((".*" ,emacs-tmp-dir t)))
 (setq auto-save-list-file-prefix emacs-tmp-dir)
+
+;; parens
+(setq skeleton-pair t)
+(global-set-key "(" 'skeleton-pair-insert-maybe)
+(global-set-key "[" 'skeleton-pair-insert-maybe)
+(global-set-key "{" 'skeleton-pair-insert-maybe)
+(global-set-key "$" 'skeleton-pair-insert-maybe)
+
+(use-package smartparens
+  :ensure t
+  :config
+  (show-paren-mode 1))
 
 ;; auto completion
 (use-package company
@@ -106,7 +117,10 @@
 
 ;; project explorer
 (use-package neotree
-  :ensure t)
+  :ensure t
+  :config
+  (setq neo-smart-open t)
+  (global-set-key [f8] 'neotree-toggle))
 
 ;; printing
 (use-package ps-print
@@ -167,31 +181,6 @@
          ("C-c g c" . magit-checkout)
          ("C-c g l" . magit-log-all)))
 
-;; javascript/TypeScript
-(use-package js2-mode
-  :ensure t)
-
-(use-package tide
-  :ensure t
-  :config)
-
-;; angular2
-(use-package typescript-mode
-  :ensure t)
-(use-package ng2-mode
-  :ensure t)
-
-;; common lisp
-(use-package slime
-  :ensure t
-  :config
-  (setq inferior-lisp-program "/usr/local/bin/sbcl")
-  (setq slime-contribs '(slime-fancy)))
-
-;; php
-(use-package php-mode
-  :ensure t)
-
 ;; multiple cursors
 (use-package multiple-cursors
   :ensure t
@@ -209,12 +198,12 @@
 
 ;; save point position between session
 (use-package saveplace
+  :ensure t
   :config
   (setq-default save-place t)
   (setq save-place-file (expand-file-name ".places" user-emacs-directory)))
 
 ;; auto-indent
-;; use: (add-hook '<some-mode>-hook #'aggressive-indent-mode)
 (use-package aggressive-indent
   :ensure t
   :init
@@ -222,78 +211,6 @@
   (add-hook 'html-mode-hook #'aggressive-indent-mode)
   (add-hook 'css-mode-hook #'aggressive-indent-mode)
   (add-hook 'LaTeX-mode-hook #'aggressive-indent-mode))
-
-;; common functions
-(defun load-init ()
-  "Runs load-file on ~/.emacs.d/init.el"
-  (interactive)
-  (load-file "~/.emacs.d/init.el"))
-
-(defun rename-file-and-buffer (new-name)
-  "Renames both current buffer and file it's visiting to NEW-NAME."
-  (interactive "sNew name: ")
-  (let ((name (buffer-name))
-        (filename (buffer-file-name)))
-    (if (not filename)
-        (message "Buffer '%s' is not visiting a file!" name)
-      (if (get-buffer new-name)
-          (message "A buffer named '%s' already exists!" new-name)
-        (progn
-          (rename-file name new-name 1)
-          (rename-buffer new-name)
-          (set-visited-file-name new-name)
-          (set-buffer-modified-p nil))))))
-
-(defun kill-other-buffers ()
-  "Kill all other buffers."
-  (interactive)
-  (mapc 'kill-buffer
-        (delq (current-buffer) (buffer-list))))
-
-(defun print ()
-  "Prints buffer"
-  (interactive)
-  (lpr-buffer))
-
-(defun delete-current-buffer-file ()
-  "Removes file connected to current buffer and kills buffer."
-  (interactive)
-  (let ((filename (buffer-file-name))
-        (buffer (current-buffer))
-        (name (buffer-name)))
-    (if (not (and filename (file-exists-p filename)))
-        (ido-kill-buffer)
-      (when (yes-or-no-p "Are you sure you want to remove this file? ")
-        (delete-file filename)
-        (kill-buffer buffer)
-        (message "File '%s' successfully removed" filename)))))
-
-(global-set-key [remap goto-line] 'goto-line-with-feedback)
-(defun goto-line-with-feedback ()
-  "Show line numbers temporarily, while prompting for the line number input"
-  (interactive)
-  (unwind-protect
-      (progn
-        (linum-mode 1)
-        (goto-line (read-number "Goto line: ")))
-    (linum-mode -1)))
-
-(defun move-line-down ()
-  (interactive)
-  (let ((col (current-column)))
-    (save-excursion
-      (forward-line)
-      (transpose-lines 1))
-    (forward-line)
-    (move-to-column col)))
-
-(defun move-line-up ()
-  (interactive)
-  (let ((col (current-column)))
-    (save-excursion
-      (forward-line)
-      (transpose-lines -1))
-    (move-to-column col)))
 
 (global-set-key (kbd "<C-S-down>") 'move-line-down)
 (global-set-key (kbd "<C-S-up>") 'move-line-up)
@@ -305,21 +222,11 @@
                   (join-line -1)))
 
 (global-set-key (kbd "C-x C-k") 'delete-current-buffer-file)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   (quote
-    (aggressive-indent multiple-cursors php-mode slime ng2-mode tide js2-mode magit latex-preview-pane company-auctex auctex neotree company smartparens nyan-mode doom-themes use-package))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(company-scrollbar-bg ((t (:background "#373c47"))))
- '(company-scrollbar-fg ((t (:background "#2c3039"))))
- '(company-tooltip ((t (:inherit default :background "#252830"))))
- '(company-tooltip-common ((t (:inherit font-lock-constant-face))))
- '(company-tooltip-selection ((t (:inherit font-lock-function-name-face)))))
+
+;; load remaining lisp
+(load "languages")
+(load "functions")
+(setq custom-file "custom.el")
+(load custom-file)
+
+;;; init.el ends here

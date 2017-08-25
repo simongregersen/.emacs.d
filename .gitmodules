@@ -1,0 +1,3 @@
+[submodule "lib/tip-mode"]
+	path = lib/tip-mode
+	url = git@github.com:simongregersen/tip-mode.git
