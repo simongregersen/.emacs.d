@@ -50,3 +50,6 @@ ido.last
 
 # save session
 .places
+
+# multiple-cursors
+.mc-lists.el

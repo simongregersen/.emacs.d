@@ -61,6 +61,13 @@
 (fset 'yes-or-no-p 'y-or-n-p)        ; short-hand yes/no selection
 (ido-mode 1)                         ; interactive DO mode (better file opening and buffer switching)
 (setq-default indent-tabs-mode nil)  ; tabs over spaces
+(delete-selection-mode +1)           ; type over a selected region, instead of deleting before typing.
+
+(use-package pretty-mode
+  :config
+  (global-pretty-mode t)
+  (pretty-activate-groups
+   '(:sub-and-superscripts :greek :arithmetic-nary)))
 
 (use-package nyan-mode
   :ensure t

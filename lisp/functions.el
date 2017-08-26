@@ -1,6 +1,8 @@
-;;; common functions
+;;; package --- functions.el
+;;; Commentary:
+;;; Code:
 (defun load-init ()
-  "Runs load-file on ~/.emacs.d/init.el"
+  "Run `load-file' on ~/.emacs.d/init.el."
   (interactive)
   (load-file (concat user-emacs-directory
                      (convert-standard-filename "init.el"))))
@@ -27,12 +29,12 @@
         (delq (current-buffer) (buffer-list))))
 
 (defun print ()
-  "Prints buffer"
+  "Prints buffer."
   (interactive)
   (lpr-buffer))
 
 (defun delete-current-buffer-file ()
-  "Removes file connected to current buffer and kills buffer."
+  "Remove file connected to current buffer and kill buffer."
   (interactive)
   (let ((filename (buffer-file-name))
         (buffer (current-buffer))
@@ -46,15 +48,16 @@
 
 (global-set-key [remap goto-line] 'goto-line-with-feedback)
 (defun goto-line-with-feedback ()
-  "Show line numbers temporarily, while prompting for the line number input"
+  "Show line numbers temporarily, while prompting for the line number input."
   (interactive)
   (unwind-protect
       (progn
         (linum-mode 1)
-        (goto-line (read-number "Goto line: ")))
+        (forward-line (read-number "Goto line: ")))
     (linum-mode -1)))
 
 (defun move-line-down ()
+  "Move current line a line down."
   (interactive)
   (let ((col (current-column)))
     (save-excursion
@@ -64,6 +67,7 @@
     (move-to-column col)))
 
 (defun move-line-up ()
+  "Move current line a line up."
   (interactive)
   (let ((col (current-column)))
     (save-excursion
@@ -71,13 +75,4 @@
       (transpose-lines -1))
     (move-to-column col)))
 
-;;; kill terminated shell buffer
-(defun comint-delchar-or-eof-or-kill-buffer (arg)
-  (interactive "p")
-  (if (null (get-buffer-process (current-buffer)))
-      (kill-buffer)
-    (comint-delchar-or-maybe-eof arg)))
-(add-hook 'shell-mode-hook
-          (lambda ()
-            (define-key shell-mode-map
-              (kbd "C-d") 'comint-delchar-or-eof-or-kill-buffer)))
+;;; functions.el ends here

@@ -1,3 +1,6 @@
+;;; package --- languages.el
+;;; Commentary:
+;;; Code:
 (require 'use-package)
 
 ;;; javascript/TypeScript
@@ -33,5 +36,13 @@
 
 ;;; haskell
 (use-package haskell-mode
+  :ensure t)
+
+(use-package dumb-jump
   :ensure t
-  :config (add-hook 'haskell-mode-hook #'hindent-mode))
+  :diminish dumb-jump-mode
+  :bind (("C-M-g" . dumb-jump-go)
+         ("C-M-p" . dumb-jump-back)
+         ("C-M-q" . dumb-jump-quick-look)))
+
+;;; languages.el ends here
