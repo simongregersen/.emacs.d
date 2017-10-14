@@ -56,8 +56,8 @@
 (setq frame-title-format '("" "%b @ %f"))        ; window title
 (setq inhibit-startup-message t)     ; dont show the GNU splash screen
 (transient-mark-mode t)              ; show selection from mark
-(tool-bar-mode 1)                    ; disable toolbar
-(menu-bar-mode 1)                    ; disable menu bar
+(tool-bar-mode 0)                    ; disable toolbar
+(menu-bar-mode 0)                    ; disable menu bar
 (scroll-bar-mode 0)                  ; disable scroll bar
 (blink-cursor-mode 0)                ; disable blinking cursor
 (mouse-avoidance-mode 'jump)         ; jump mouse away when typing
