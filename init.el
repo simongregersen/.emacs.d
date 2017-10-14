@@ -21,6 +21,16 @@
   (package-install 'use-package))
 (require 'use-package)
 
+;; MAC fix
+(setq mac-option-modifier nil
+      mac-command-modifier 'meta
+      x-select-enable-clipboard t)
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (when (memq window-system '(mac ns x))
+    (exec-path-from-shell-initialize)))
+
 ;; local library
 (add-to-list 'load-path (concat user-emacs-directory "lisp"))
 (let ((default-directory (concat user-emacs-directory "lib")))
@@ -42,12 +52,12 @@
 (when (member "Symbola" (font-family-list))
   (set-fontset-font t 'unicode "Symbola" nil 'prepend))
 
-(set-face-attribute 'default nil :height 90)     ; font size
+(set-face-attribute 'default nil :height 100)     ; font size
 (setq frame-title-format '("" "%b @ %f"))        ; window title
 (setq inhibit-startup-message t)     ; dont show the GNU splash screen
 (transient-mark-mode t)              ; show selection from mark
-(tool-bar-mode 0)                    ; disable toolbar
-(menu-bar-mode 0)                    ; disable menu bar
+(tool-bar-mode 1)                    ; disable toolbar
+(menu-bar-mode 1)                    ; disable menu bar
 (scroll-bar-mode 0)                  ; disable scroll bar
 (blink-cursor-mode 0)                ; disable blinking cursor
 (mouse-avoidance-mode 'jump)         ; jump mouse away when typing
@@ -64,6 +74,7 @@
 (delete-selection-mode +1)           ; type over a selected region, instead of deleting before typing.
 
 (use-package pretty-mode
+  :ensure t
   :config
   (global-pretty-mode t)
   (pretty-activate-groups
@@ -88,13 +99,6 @@
 (setq backup-directory-alist `((".*" . ,emacs-tmp-dir)))
 (setq auto-save-file-name-transforms `((".*" ,emacs-tmp-dir t)))
 (setq auto-save-list-file-prefix emacs-tmp-dir)
-
-;; parens
-(setq skeleton-pair t)
-(global-set-key "(" 'skeleton-pair-insert-maybe)
-(global-set-key "[" 'skeleton-pair-insert-maybe)
-(global-set-key "{" 'skeleton-pair-insert-maybe)
-(global-set-key "$" 'skeleton-pair-insert-maybe)
 
 (use-package smartparens
   :ensure t
@@ -235,6 +239,7 @@
 ;; load remaining lisp
 (load "languages")
 (load "functions")
+(load "coq")
 (setq custom-file (concat user-emacs-directory (convert-standard-filename "lisp/custom.el")))
 (load custom-file)
 

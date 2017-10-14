@@ -53,7 +53,7 @@
   (unwind-protect
       (progn
         (linum-mode 1)
-        (forward-line (read-number "Goto line: ")))
+        (goto-line (read-number "Goto line: ")))
     (linum-mode -1)))
 
 (defun move-line-down ()

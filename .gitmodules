@@ -1,3 +1,6 @@
 [submodule "lib/tip-mode"]
 	path = lib/tip-mode
 	url = git@github.com:simongregersen/tip-mode.git
+[submodule "lib/PG"]
+	path = lib/PG
+	url = git@github.com:ProofGeneral/PG.git
