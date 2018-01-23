@@ -4,9 +4,10 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(coq-compile-before-require t)
+ '(magit-push-arguments nil)
  '(package-selected-packages
    (quote
-    (exec-path-from-shell company-coq prettify-symbols-mode pretty-mode dumb-jump use-package tide smartparens slime php-mode nyan-mode ng2-mode neotree multiple-cursors magit latex-preview-pane js2-mode haskell-mode doom-themes company-auctex blackboard-theme aggressive-indent))))
+    (idris-mode ensime mocha exec-path-from-shell company-coq prettify-symbols-mode pretty-mode dumb-jump use-package tide smartparens slime php-mode nyan-mode ng2-mode neotree multiple-cursors magit latex-preview-pane js2-mode haskell-mode doom-themes company-auctex blackboard-theme aggressive-indent))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

@@ -25,6 +25,7 @@
 (setq mac-option-modifier nil
       mac-command-modifier 'meta
       x-select-enable-clipboard t)
+
 (use-package exec-path-from-shell
   :ensure t
   :config
@@ -52,13 +53,15 @@
 (when (member "Symbola" (font-family-list))
   (set-fontset-font t 'unicode "Symbola" nil 'prepend))
 
-(set-face-attribute 'default nil :height 100)     ; font size
+(set-face-attribute 'default nil :height 100)    ; font size
 (setq frame-title-format '("" "%b @ %f"))        ; window title
 (setq inhibit-startup-message t)     ; dont show the GNU splash screen
 (transient-mark-mode t)              ; show selection from mark
-(tool-bar-mode 0)                    ; disable toolbar
-(menu-bar-mode 0)                    ; disable menu bar
-(scroll-bar-mode 0)                  ; disable scroll bar
+(if (display-graphic-p)
+    (progn
+      (tool-bar-mode -1)      ; disable toolbar
+      (menu-bar-mode -1)      ; disable menu bar
+      (scroll-bar-mode -1)))  ; disable scroll bar
 (blink-cursor-mode 0)                ; disable blinking cursor
 (mouse-avoidance-mode 'jump)         ; jump mouse away when typing
 (setq visible-bell 1)                ; turn off bip warnings
@@ -76,7 +79,7 @@
 (use-package pretty-mode
   :ensure t
   :config
-  (global-pretty-mode t)
+  (add-hook 'coq-mode 'turn-on-pretty-mode)
   (pretty-activate-groups
    '(:sub-and-superscripts :greek :arithmetic-nary)))
 
@@ -173,6 +176,7 @@
   (add-hook 'LaTeX-mode-hook 'latex-preview-pane-mode)
   (latex-preview-pane-enable))
 
+
 ;; git
 (use-package magit
   :ensure t
@@ -217,18 +221,23 @@
   (setq save-place-file (expand-file-name ".places" user-emacs-directory)))
 
 ;; auto-indent
-(use-package aggressive-indent
-  :ensure t
-  :init
-  (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
-  (add-hook 'html-mode-hook #'aggressive-indent-mode)
-  (add-hook 'css-mode-hook #'aggressive-indent-mode)
-  (add-hook 'LaTeX-mode-hook #'aggressive-indent-mode))
+;; (use-package aggressive-indent
+;;   :ensure t
+;;   :init
+;;   (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+;;   (add-hook 'html-mode-hook #'aggressive-indent-mode)
+;;   (add-hook 'css-mode-hook #'aggressive-indent-mode)
+;;   (add-hook 'LaTeX-mode-hook #'aggressive-indent-mode))
 
+;; custom key bindings
 (global-set-key (kbd "<C-S-down>") 'move-line-down)
 (global-set-key (kbd "<C-S-up>") 'move-line-up)
 
-;; custom key bindings
+(global-set-key (kbd "S-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "S-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "S-<down>") 'shrink-window)
+(global-set-key (kbd "S-<up>") 'enlarge-window)
+
 (global-set-key (kbd "M-j")
                 (lambda ()
                   (interactive)
@@ -242,5 +251,28 @@
 (load "coq")
 (setq custom-file (concat user-emacs-directory (convert-standard-filename "lisp/custom.el")))
 (load custom-file)
+
+(defun TeX-brace-count-line ()
+  "Count number of open/closed braces."
+  (save-excursion
+    (let ((count 0) (limit (line-end-position)) char)
+      (while (progn
+               (skip-chars-forward "^{}[]\\\\" limit)
+               (when (and (< (point) limit) (not (TeX-in-comment)))
+                 (setq char (char-after))
+                 (forward-char)
+                 (cond ((eq char ?\{)
+                        (setq count (+ count TeX-brace-indent-level)))
+                       ((eq char ?\})
+                        (setq count (- count TeX-brace-indent-level)))
+                       ((eq char ?\[)
+                        (setq count (+ count TeX-brace-indent-level)))
+                       ((eq char ?\])
+                        (setq count (- count TeX-brace-indent-level)))
+                       ((eq char ?\\)
+                        (when (< (point) limit)
+                          (forward-char)
+                          t))))))
+      count)))
 
 ;;; init.el ends here
