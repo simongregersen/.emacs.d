@@ -10,6 +10,11 @@
   (add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
   (add-hook 'js2-mode-hook (lambda () (setq js2-basic-offset 4))))
 
+(use-package rainbow-mode
+  :ensure t
+  :config
+  (add-hook 'css-mode-hook 'rainbow-mode))
+
 (use-package tide
   :ensure t
   :config)
@@ -36,6 +41,7 @@
 
 ;;; TIP
 (use-package tip-mode
+  :ensure f
   :config
   (add-to-list 'auto-mode-alist '("\\.tip\\'" . tip-mode)))
 
@@ -61,6 +67,18 @@
 (use-package idris-mode
   :ensure t
   :config
-  (add-to-list 'auto-mode-alist '("\\.idr\\'" . idris-mode)))
+  (add-to-list 'auto-mode-alist '("\\.idr\\'" . idris-mode))
+  (defun my-idris-mode-hook ()
+  (add-to-list 'display-buffer-alist
+               '(".*". (display-buffer-reuse-window . ((reusable-frames . t)))))
+  (setq idris-stay-in-current-window-on-compiler-error t)
+  (setq idris-prover-restore-window-configuration t)
+
+  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-repl*")
+  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-notes*")
+  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-info*")
+  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-holes*"))
+
+(add-hook 'idris-mode-hook #'my-idris-mode-hook))
 
 ;;; languages.el ends here

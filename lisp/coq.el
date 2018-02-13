@@ -3,6 +3,7 @@
 ;;; Code:
 
 (use-package proof-site
+  :ensure f
   :defer t
   :mode ("\\.v\\'" . coq-mode)
   :load-path "~/.emacs.d/lib/PG/generic/proof-site"

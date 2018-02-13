@@ -3,7 +3,10 @@
 ;;; Code:
 
 ;; initialization
-(require 'package)
+(when (>= emacs-major-version 24)
+  (require 'package)
+  (package-initialize))
+
 (setq package-enable-at-startup nil)
 (setq package-archives
       '(("GNU ELPA"     . "http://elpa.gnu.org/packages/")
@@ -12,14 +15,16 @@
       package-archive-priorities
       '(("MELPA Stable" . 10)
         ("GNU ELPA"     . 5)
-        ("MELPA"        . 0)))
+        ("MELPA"        . 15)))
 (package-initialize)
 
 ;; bootstrap and load use-package
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
+
 (require 'use-package)
+(setq use-package-always-ensure t)
 
 ;; MAC fix
 (setq mac-option-modifier nil
@@ -38,9 +43,31 @@
   (normal-top-level-add-subdirs-to-load-path))
 
 ;; appearance
+(use-package powerline
+  :ensure t
+  :config (powerline-default-theme))
+
 (use-package all-the-icons) ; 'M-x all-the-icons-install-fonts' to install resource fonts
-(use-package blackboard-theme
-  :ensure t)
+(use-package doom-themes
+  :init
+  (load-theme 'doom-vibrant t)
+  (doom-themes-neotree-config))
+
+;; highlight changes
+(use-package git-gutter
+  :diminish git-gutter-mode
+  :config (global-git-gutter-mode))
+
+;; smooth scrolling
+(use-package smooth-scroll
+  :if (display-graphic-p)
+  :diminish smooth-scroll-mode
+  :config
+  (setq smooth-scroll/vscroll-step-size 8)
+  (smooth-scroll-mode))
+
+;; setup path
+(add-to-list 'exec-path "/home/gregersen/.cabal/bin")
 
 (set-language-environment "UTF-8")
 (set-default-coding-systems 'utf-8-unix)
