@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# key: ptree
+# group: skeleton
+# name: ptree
+# --
+\begin{figure}[H]
+  \centering
+  \begin{prooftree}
+  \infer0{${}}
+  \end{prooftree}
+\end{figure}

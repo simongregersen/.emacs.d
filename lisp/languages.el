@@ -40,10 +40,10 @@
   :ensure t)
 
 ;;; TIP
-(use-package tip-mode
-  :ensure f
-  :config
-  (add-to-list 'auto-mode-alist '("\\.tip\\'" . tip-mode)))
+;; (use-package tip-mode
+;;   :ensure f
+;;   :config
+;;   (add-to-list 'auto-mode-alist '("\\.tip\\'" . tip-mode)))
 
 ;;; haskell
 (use-package haskell-mode

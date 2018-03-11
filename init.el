@@ -27,9 +27,10 @@
 (setq use-package-always-ensure t)
 
 ;; MAC fix
-(setq mac-option-modifier nil
-      mac-command-modifier 'meta
-      x-select-enable-clipboard t)
+(when (eq system-type 'darwin) ;; mac specific settings
+  (setq mac-option-modifier 'alt)
+  (setq mac-command-modifier 'meta)
+  (global-set-key [kp-delete] 'delete-char))
 
 (use-package exec-path-from-shell
   :ensure t
@@ -57,14 +58,6 @@
 (use-package git-gutter
   :diminish git-gutter-mode
   :config (global-git-gutter-mode))
-
-;; smooth scrolling
-(use-package smooth-scroll
-  :if (display-graphic-p)
-  :diminish smooth-scroll-mode
-  :config
-  (setq smooth-scroll/vscroll-step-size 8)
-  (smooth-scroll-mode))
 
 ;; setup path
 (add-to-list 'exec-path "/home/gregersen/.cabal/bin")
@@ -102,6 +95,11 @@
 (ido-mode 1)                         ; interactive DO mode (better file opening and buffer switching)
 (setq-default indent-tabs-mode nil)  ; tabs over spaces
 (delete-selection-mode +1)           ; type over a selected region, instead of deleting before typing.
+
+(add-to-list 'default-frame-alist '(fullscreen . maximized)) ; start full screen
+
+;; file extensions to ignore
+(push ".ibc" completion-ignored-extensions)
 
 (use-package pretty-mode
   :ensure t
@@ -150,13 +148,13 @@
   (define-key company-mode-map (kbd "C-M-i") 'company-indent-or-complete-common)
   (global-company-mode))
 (require 'color)
-(let ((bg (face-attribute 'default :background)))
-  (custom-set-faces
-   `(company-tooltip ((t (:inherit default :background ,(color-lighten-name bg 2)))))
-   `(company-scrollbar-bg ((t (:background ,(color-lighten-name bg 10)))))
-   `(company-scrollbar-fg ((t (:background ,(color-lighten-name bg 5)))))
-   `(company-tooltip-selection ((t (:inherit font-lock-function-name-face))))
-   `(company-tooltip-common ((t (:inherit font-lock-constant-face))))))
+;; (let ((bg (face-attribute 'default :background)))
+;;   (custom-set-faces
+;;    `(company-tooltip ((t (:inherit default :background ,(color-lighten-name bg 2)))))
+;;    `(company-scrollbar-bg ((t (:background ,(color-lighten-name bg 10)))))
+;;    `(company-scrollbar-fg ((t (:background ,(color-lighten-name bg 5)))))
+;;    `(company-tooltip-selection ((t (:inherit font-lock-function-name-face))))
+;;    `(company-tooltip-common ((t (:inherit font-lock-constant-face))))))
 
 ;; project explorer
 (use-package neotree
