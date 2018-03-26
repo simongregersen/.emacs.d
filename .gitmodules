@@ -4,3 +4,6 @@
 [submodule "lib/PG"]
 	path = lib/PG
 	url = git@github.com:ProofGeneral/PG.git
+[submodule "lib/idris-mode"]
+	path = lib/idris-mode
+	url = https://github.com/idris-hackers/idris-mode

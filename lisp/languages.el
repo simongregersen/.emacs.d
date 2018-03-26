@@ -65,7 +65,8 @@
 
 ;;; idris
 (use-package idris-mode
-  :ensure t
+  :ensure f
+  :load-path "~/.emacs.d/lib/idris-mode/idris-mode.el"
   :config
   (add-to-list 'auto-mode-alist '("\\.idr\\'" . idris-mode))
   (defun my-idris-mode-hook ()

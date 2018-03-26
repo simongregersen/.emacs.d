@@ -28,7 +28,7 @@
 
 ;; MAC fix
 (when (eq system-type 'darwin) ;; mac specific settings
-  (setq mac-option-modifier 'alt)
+  (setq mac-option-modifier nil)
   (setq mac-command-modifier 'meta)
   (global-set-key [kp-delete] 'delete-char))
 
@@ -116,7 +116,8 @@
 (use-package flycheck
   :ensure t
   :config
-  (add-hook 'after-init-hook #'global-flycheck-mode))
+  ;; (add-hook 'after-init-hook #'global-flycheck-mode)
+  )
 
 ;; misc. hooks
 (add-hook 'before-save-hook 'whitespace-cleanup) ; whitespace-cleanup on save
