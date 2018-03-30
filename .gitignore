@@ -53,3 +53,6 @@ ido.last
 
 # multiple-cursors
 .mc-lists.el
+
+network-security.data
+/abbrev_defs/

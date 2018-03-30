@@ -1,0 +1,27 @@
+# -*- mode: org -*-
+# -*- coding: utf-8 -*-
+#+TITLE:    Emacs configuration file
+#+AUTHOR:   Simon Gregersen
+#+LANGUAGE: en
+#+PROPERTY: header-args :tangle yes
+
+#+BEGIN_SRC emacs-lisp
+(require 'package)
+
+(unless (assoc-default "melpa" package-archives)
+  (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
+  (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t))
+
+(package-initialize)
+#+END_SRC
+* Use package
+#+BEGIN_SRC emacs-lisp
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+(eval-when-compile
+  (require 'use-package))
+(require 'bind-key)
+
+(setq use-package-always-ensure t)
+#+END_SRC
