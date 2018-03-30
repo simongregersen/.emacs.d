@@ -2,19 +2,40 @@
 # -*- coding: utf-8 -*-
 #+TITLE:    Emacs configuration file
 #+AUTHOR:   Simon Gregersen
-#+LANGUAGE: en
 #+PROPERTY: header-args :tangle yes
 
+* Setup
+** Editing init.org
+#+BEGIN_SRC emacs-lisp
+(defun find-config ()
+  "Edit init.org"
+  (interactive)
+  (find-file (concat user-emacs-directory "init.org")))
+
+(global-set-key (kbd "C-c I") 'find-config)
+
+(defun load-init ()
+  "Run tangle, load and byte-compile init.org"
+  (interactive)
+  (find-file (concat user-emacs-directory "init.org"))
+  (org-babel-tangle)
+  (load-file (concat user-emacs-directory "init.el"))
+  (byte-compile-file (concat user-emacs-directory "init.el")))
+#+END_SRC
+
+** Package repositories
 #+BEGIN_SRC emacs-lisp
 (require 'package)
 
 (unless (assoc-default "melpa" package-archives)
   (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
   (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t))
+(setq package-enable-at-startup nil)
 
 (package-initialize)
 #+END_SRC
-* Use package
+
+** Use package
 #+BEGIN_SRC emacs-lisp
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
@@ -24,4 +45,472 @@
 (require 'bind-key)
 
 (setq use-package-always-ensure t)
+#+END_SRC
+
+** Execution path from shell
+#+BEGIN_SRC emacs-lisp
+(use-package exec-path-from-shell
+  :config
+  (exec-path-from-shell-initialize)
+  (setq exec-path-from-shell-check-startup-files nil))
+#+END_SRC
+
+* Preferences
+** Encodings
+#+BEGIN_SRC emacs-lisp
+(prefer-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+#+END_SRC
+
+** Time
+#+BEGIN_SRC emacs-lisp
+(setq-default
+ display-time 1
+ display-time-24hr-format t
+ display-time-day-and-date nil
+ display-time-default-load-average nil
+ battery−mode−line−format " [%L %p%% %dC]")
+(display-time-mode)
+#+END_SRC
+
+** Global clipboard
+#+BEGIN_SRC emacs-lisp
+(setq x-select-enable-clipboard t
+      x-select-enable-primary t)
+#+END_SRC
+
+** Whitespace cleanup
+#+BEGIN_SRC emacs-lisp
+(add-hook 'before-save-hook 'whitespace-cleanup)
+#+END_SRC
+** macOS
+#+BEGIN_SRC emacs-lisp
+(setq mac-command-modifier 'meta)
+(setq mac-option-modifier nil)
+(setq locate-command "mdfind")
+(setq ns-pop-up-frames nil)
+;; Some mac-bindings interfere with Emacs bindings.
+(when (boundp 'mac-pass-command-to-system)
+      (setq mac-pass-command-to-system nil))
+#+END_SRC
+
+** Autosave
+#+BEGIN_SRC emacs-lisp
+(defconst emacs-tmp-dir (format "%s/%s/" user-emacs-directory "backup"))
+(setq backup-directory-alist `((".*" . ,emacs-tmp-dir)))
+(setq auto-save-file-name-transforms `((".*" ,emacs-tmp-dir t)))
+(setq auto-save-list-file-prefix emacs-tmp-dir)
+#+END_SRC
+
+** Custom-file
+#+BEGIN_SRC emacs-lisp
+(setq custom-file (concat user-emacs-directory "custom.el"))
+(load custom-file)
+#+END_SRC
+
+** Ignored file extensions
+#+BEGIN_SRC emacs-lisp
+(push ".ibc" completion-ignored-extensions) ;;
+#+END_SRC
+
+** Miscellaneous
+#+BEGIN_SRC emacs-lisp
+(setq frame-title-format '("" "%b @ %f"))        ; window title
+(setq inhibit-startup-message t)     ; dont show the GNU splash screen
+(transient-mark-mode t)              ; show selection from mark
+(if (display-graphic-p)
+    (progn
+      (tool-bar-mode -1)             ; disable toolbar
+      (menu-bar-mode -1)             ; disable menu bar
+      (scroll-bar-mode -1)))         ; disable scroll bar
+(blink-cursor-mode 0)                ; disable blinking cursor
+(mouse-avoidance-mode 'jump)         ; jump mouse away when typing
+(setq visible-bell 1)                ; turn off bip warnings
+(auto-compression-mode 1)            ; browse tar archives
+(put 'upcase-region 'disabled nil)   ; enable ``upcase-region''
+(put 'set-goal-column 'disabled nil) ; enable column positioning
+(setq column-number-mode t)          ; show column number
+(setq case-fold-search t)            ; make search ignore case
+(global-linum-mode 0)                ; global line numbers
+(fset 'yes-or-no-p 'y-or-n-p)        ; short-hand yes/no selection
+(ido-mode 1)                         ; interactive DO mode (better file opening and buffer switching)
+(setq-default indent-tabs-mode nil)  ; tabs over spaces
+(delete-selection-mode +1)           ; type over a selected region, instead of deleting before typing.
+(add-to-list 'default-frame-alist '(fullscreen . maximized)) ; start full screen
+
+(global-unset-key (kbd "<M-drag-mouse-1>"))   ; was mouse-set-secondary
+(global-unset-key (kbd "<M-down-mouse-1>"))   ; was mouse-drag-secondary
+(global-unset-key (kbd "<M-mouse-1>"))        ; was mouse-start-secondary
+(global-unset-key (kbd "<M-mouse-2>"))        ; was mouse-yank-secondary
+(global-unset-key (kbd "<M-mouse-3>"))        ; was mouse-secondary-save-then-kill
+#+END_SRC
+
+* Appearance
+** Fonts
+#+BEGIN_SRC emacs-lisp
+;; set a default font
+(when (member "DejaVu Sans Mono" (font-family-list))
+  (set-face-attribute 'default nil :font "DejaVu Sans Mono"))
+;; specify font for all unicode characters
+(when (member "Symbola" (font-family-list))
+  (set-fontset-font t 'unicode "Symbola" nil 'prepend))
+(set-face-attribute 'default nil :height 100)    ; font size
+#+END_SRC
+
+** Powerline
+#+BEGIN_SRC emacs-lisp
+(use-package powerline
+  :config (powerline-default-theme))
+#+END_SRC
+
+** Doom themes
+#+BEGIN_SRC emacs-lisp
+(use-package all-the-icons) ; 'M-x all-the-icons-install-fonts' to install resource fonts
+(use-package doom-themes
+  :init
+  (load-theme 'doom-vibrant t)
+  (doom-themes-neotree-config))
+#+END_SRC
+
+** Git-gutter
+#+BEGIN_SRC emacs-lisp
+(use-package git-gutter
+  :diminish git-gutter-mode)
+#+END_SRC
+
+** Company
+#+BEGIN_SRC emacs-lisp
+(use-package company
+  :config
+  (setq company-idle-delay 0
+        company-echo-delay 0
+        company-dabbrev-downcase nil
+        company-minimum-prefix-length 3
+        ompany-tooltip-limit 20
+        company-selection-wrap-around t
+        company-transformers '(company-sort-by-occurrence
+                               company-sort-by-backend-importance))
+  (define-key company-mode-map (kbd "C-M-i") 'company-indent-or-complete-common)
+  (global-company-mode))
+#+END_SRC
+
+** Neotree
+#+BEGIN_SRC emacs-lisp
+(use-package neotree
+  :ensure t
+  :config
+  (setq neo-smart-open t)
+  (global-set-key [f8] 'neotree-toggle))
+#+END_SRC
+
+** Popwin
+#+BEGIN_SRC emacs-lisp
+(use-package popwin
+  :config
+  (global-set-key (kbd "C-z") popwin:keymap)
+  (add-to-list 'popwin:special-display-config `("*Swoop*" :height 0.5 :position bottom))
+  (add-to-list 'popwin:special-display-config `("*\.\* output*" :height 0.5 :noselect t :position bottom))
+  (add-to-list 'popwin:special-display-config `("*Warnings*" :height 0.5 :noselect t))
+  (add-to-list 'popwin:special-display-config `("*TeX Help*" :height 0.5 :noselect t))
+  (add-to-list 'popwin:special-display-config `("*ENSIME Welcome*" :height 0.5 :noselect t))
+  (add-to-list 'popwin:special-display-config `("*Procces List*" :height 0.5))
+  (add-to-list 'popwin:special-display-config `("*Messages*" :height 0.5 :noselect t))
+  (add-to-list 'popwin:special-display-config `("*Help*" :height 0.5 :noselect nil))
+  (add-to-list 'popwin:special-display-config `("*Backtrace*" :height 0.5))
+  (add-to-list 'popwin:special-display-config `("*Compile-Log*" :height 0.5 :noselect t))
+  (add-to-list 'popwin:special-display-config `("*Remember*" :height 0.5))
+  (add-to-list 'popwin:special-display-config `("*ansi-term*" :height 0.5 :position top))
+  (add-to-list 'popwin:special-display-config `("*All*" :height 0.5))
+  (add-to-list 'popwin:special-display-config `("*Go Test*" :height 0.3))
+  (add-to-list 'popwin:special-display-config `("*Slack -" :regexp t :height 0.5 :position bottom))
+  (add-to-list 'popwin:special-display-config `(flycheck-error-list-mode :height 0.5 :regexp t :position bottom))
+  (popwin-mode 1))
+#+END_SRC
+
+** Pretty-mode
+#+BEGIN_SRC emacs-lisp
+(use-package pretty-mode
+  :ensure t
+  :config
+  (add-hook 'coq-mode 'turn-on-pretty-mode)
+  (pretty-activate-groups
+   '(:sub-and-superscripts :greek :arithmetic-nary)))
+#+END_SRC
+
+** Flyspell
+#+BEGIN_SRC emacs-lisp
+(add-hook 'text-mode-hook 'flyspell-mode)
+(setq flyspell-issue-message-flag nil)
+#+END_SRC
+
+** Undo tree
+#+BEGIN_SRC emacs-lisp
+(use-package undo-tree
+  :bind (("C-x u" . undo-tree-visualize)
+         ("C--" . undo))
+  :config
+  (global-undo-tree-mode))
+#+END_SRC
+
+** Expand region
+#+BEGIN_SRC emacs-lisp
+(use-package expand-region
+  :bind
+  ("M-e" . er/expand-region))
+#+END_SRC
+
+* Coding
+** Smartparens
+#+BEGIN_SRC emacs-lisp
+(use-package smartparens
+  :config (show-paren-mode 1))
+#+END_SRC
+
+** Rainbow delimiters
+#+BEGIN_SRC emacs-lisp
+(use-package rainbow-delimiters
+  :config
+  (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
+#+END_SRC
+
+** YASnippets
+#+BEGIN_SRC emacs-lisp
+(use-package yasnippet
+  :ensure t
+  :init
+  (yas-global-mode 1)
+  :config
+  (add-to-list 'yas-snippet-dirs (locate-user-emacs-file "snippets")))
+#+END_SRC
+
+** LaTeX
+#+BEGIN_SRC emacs-lisp
+(use-package tex
+  :ensure auctex
+  :defer t
+  :config
+  (setq TeX-auto-save t)
+  (setq TeX-parse-self t)
+  (setq TeX-save-query nil)
+  (setq TeX-PDF-mode t)
+  (setq TeX-clean-confirm nil)
+  (add-hook 'LaTeX-mode-hook 'visual-line-mode)
+  (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+  (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+  (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
+  (add-hook 'LaTeX-mode-hook
+            (lambda ()
+              (add-hook 'kill-buffer-hook 'TeX-clean nil 'make-it-local))))
+
+(use-package company-auctex
+  :ensure t
+  :config
+  (company-auctex-init))
+
+(use-package latex-preview-pane
+  :ensure t
+  :config
+  (add-hook 'LaTeX-mode-hook 'latex-preview-pane-mode)
+  (latex-preview-pane-enable))
+#+END_SRC
+
+** Magit
+#+BEGIN_SRC emacs-lisp
+(use-package magit
+  :ensure t
+  :config
+  (defadvice magit-status (around magit-fullscreen activate)
+    (window-configuration-to-register :magit-fullscreen)
+    ad-do-it
+    (delete-other-windows))
+  (defun magit-quit-session ()
+    "Restores the previous window configuration and kills the magit buffer"
+    (interactive)
+    (kill-buffer)
+    (jump-to-register :magit-fullscreen))
+  (define-key magit-status-mode-map (kbd "q") 'magit-quit-session)
+  (setq magit-refresh-status-buffer nil)
+  (setq vc-handled-backends nil)
+  :bind (("C-x g" . magit-status)
+         ("C-c g b" . magit-branch-and-checkout)
+         ("C-c g c" . magit-checkout)
+         ("C-c g l" . magit-log-all)))
+#+END_SRC
+
+** Coq
+#+BEGIN_SRC emacs-lisp
+(use-package proof-site
+  :ensure f
+  :defer t
+  :mode ("\\.v\\'" . coq-mode)
+  :load-path "~/.emacs.d/lib/PG/generic"
+  :config
+  (setq proof-splash-seen t)
+  (setq proof-three-window-mode-policy 'hybrid)
+  (setq proof-script-fly-past-comments t)
+  (setq coq-compile-before-require t)
+
+  (use-package company-coq
+    :ensure t
+    :config
+    (add-hook 'coq-mode-hook #'company-coq-mode)
+    (add-hook 'coq-mode-hook
+              (lambda ()
+                (setq-local prettify-symbols-alist
+                            '(("Proof." . ?∵) ("Qed." . ?■))))))
+
+  (defconst company-coq-tg--preprocessor-substitutions
+    '(("\n"  . " ") ("[ "  . "( OR-GROUP ") (" ]"  . " )")
+      (" | " . " OR ") ("; "  . " AND ") ("'" . "’")))
+  )
+#+END_SRC
+
+** Haskell
+#+BEGIN_SRC emacs-lisp
+(use-package haskell-mode)
+#+END_SRC
+
+** Scala
+#+BEGIN_SRC emacs-lisp
+(use-package ensime
+  :defer t
+  :config
+  (setq ensime-startup-notification nil)
+  (add-hook 'scala-mode-hook 'ensime-scala-mode-hook))
+
+(use-package scala-mode
+  :interpreter
+  ("scala" . scala-mode))
+#+END_SRC
+
+** Idris
+#+BEGIN_SRC emacs-lisp
+(use-package idris-mode
+  :mode (("\\.idr$" . idris-mode)
+         ("\\.lidr$" . idris-mode))
+  :defer t
+  :config
+  (let ((my-cabal-path (expand-file-name "~/.cabal/bin")))
+   (setenv "PATH" (concat my-cabal-path path-separator (getenv "PATH")))
+   (add-to-list 'exec-path my-cabal-path))
+  (defun my-idris-mode-hook ()
+  (add-to-list 'display-buffer-alist
+               '(".*". (display-buffer-reuse-window . ((reusable-frames . t)))))
+  (setq idris-stay-in-current-window-on-compiler-error t)
+  (setq idris-prover-restore-window-configuration t)
+
+  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-repl*")
+  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-notes*")
+  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-info*")
+  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-holes*"))
+
+
+(add-hook 'idris-mode-hook #'my-idris-mode-hook))
+#+END_SRC
+
+** SML
+#+BEGIN_SRC emacs-lisp
+(use-package sml-mode
+  :mode "\\.sml\\'"
+  :interpreter "sml")
+#+END_SRC
+
+** Lisp
+#+BEGIN_SRC emacs-lisp
+(use-package slime
+  :ensure t
+  :config
+  (setq inferior-lisp-program "/usr/local/bin/sbcl")
+  (setq slime-contribs '(slime-fancy)))
+#+END_SRC
+
+** TIP
+#+BEGIN_SRC emacs-lisp
+(use-package tip-mode
+  :ensure f
+  :load-path "~/.emacs.d/lib/tip-mode"
+  :config
+  (add-to-list 'auto-mode-alist '("\\.tip\\'" . tip-mode)))
+#+END_SRC
+
+** Markdown
+#+BEGIN_SRC emacs-lisp
+(use-package markdown-mode
+  :ensure t
+  :commands (markdown-mode gfm-mode)
+  :mode (("README\\.md\\'" . gfm-mode)
+         ("\\.md\\'" . markdown-mode)
+         ("\\.txt\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init
+  (setq markdown-command "multimarkdown")
+  :config
+  (add-hook 'markdown-mode-hook 'flyspell-mode))
+#+END_SRC
+
+* Extras
+** Functions
+#+BEGIN_SRC emacs-lisp
+(defun move-line-down ()
+  "Move current line a line down."
+  (interactive)
+  (let ((col (current-column)))
+    (save-excursion
+      (forward-line)
+      (transpose-lines 1))
+    (forward-line)
+    (move-to-column col)))
+
+(defun move-line-up ()
+  "Move current line a line up."
+  (interactive)
+  (let ((col (current-column)))
+    (save-excursion
+      (forward-line)
+      (transpose-lines -1))
+    (move-to-column col)))
+
+(defun rename-file-and-buffer (new-name)
+  "Renames both current buffer and file it's visiting to NEW-NAME."
+  (interactive "sNew name: ")
+  (let ((name (buffer-name))
+        (filename (buffer-file-name)))
+    (if (not filename)
+        (message "Buffer '%s' is not visiting a file!" name)
+      (if (get-buffer new-name)
+          (message "A buffer named '%s' already exists!" new-name)
+        (progn
+          (rename-file name new-name 1)
+          (rename-buffer new-name)
+          (set-visited-file-name new-name)
+          (set-buffer-modified-p nil))))))
+#+END_SRC
+
+** Keybindings
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "M-j")
+                (lambda ()
+                  (interactive)
+                  (join-line -1)))
+
+(global-set-key (kbd "<C-S-down>") 'move-line-down)
+(global-set-key (kbd "<C-S-up>") 'move-line-up)
+
+(global-set-key (kbd "<C-S-down>") 'move-line-down)
+(global-set-key (kbd "<C-S-up>") 'move-line-up)
+#+END_SRC
+
+** Show lines when prompting
+#+BEGIN_SRC emacs-lisp
+(global-set-key [remap goto-line] 'goto-line-with-feedback)
+(defun goto-line-with-feedback ()
+  "Show line numbers temporarily, while prompting for the line number input."
+  (interactive)
+  (unwind-protect
+      (progn
+        (linum-mode 1)
+        (goto-line (read-number "Goto line: ")))
+    (linum-mode -1)))
 #+END_SRC
