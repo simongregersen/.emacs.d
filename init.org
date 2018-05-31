@@ -70,8 +70,7 @@
  display-time 1
  display-time-24hr-format t
  display-time-day-and-date nil
- display-time-default-load-average nil
- battery−mode−line−format " [%L %p%% %dC]")
+ display-time-default-load-average nil)
 (display-time-mode)
 #+END_SRC
 
@@ -226,6 +225,7 @@
   (add-to-list 'popwin:special-display-config `("*Go Test*" :height 0.3))
   (add-to-list 'popwin:special-display-config `("*Slack -" :regexp t :height 0.5 :position bottom))
   (add-to-list 'popwin:special-display-config `(flycheck-error-list-mode :height 0.5 :regexp t :position bottom))
+  (add-to-list 'popwin:special-display-config `("*compilation*" :width 0.5 :position right))
   (popwin-mode 1))
 #+END_SRC
 
@@ -249,8 +249,10 @@
 #+BEGIN_SRC emacs-lisp
 (use-package undo-tree
   :bind (("C-x u" . undo-tree-visualize)
-         ("C--" . undo))
+         ("C--" . undo)
+         ("C-+" . redo))
   :config
+  (setq undo-tree-visualizer-diff 1)
   (global-undo-tree-mode))
 #+END_SRC
 
@@ -424,7 +426,7 @@
 #+BEGIN_SRC emacs-lisp
 (use-package js2-mode
   :ensure t
-  :init
+  :config
   (setq js-basic-indent 2)
   (setq-default js2-basic-indent 2
                 js2-basic-offset 2
@@ -433,10 +435,8 @@
                 js2-enter-indents-newline t
                 js2-indent-on-enter-key t
                 js2-global-externs (list "window" "module" "require" "buster" "sinon" "assert" "refute" "setTimeout" "clearTimeout" "setInterval" "clearInterval" "location" "__dirname" "console" "JSON" "jQuery" "$"))
-  (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode)))
-
-(add-hook 'js2-mode-hook
-          (lambda () (flycheck-select-checker "javascript-eslint")))
+  (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+  (add-hook 'js2-mode-hook (lambda () (set (make-local-variable 'compile-command) "npm test"))))
 
 (use-package tern
    :ensure t
@@ -459,7 +459,6 @@
 ** Markdown
 #+BEGIN_SRC emacs-lisp
 (use-package markdown-mode
-  :ensure t
   :commands (markdown-mode gfm-mode)
   :mode (("README\\.md\\'" . gfm-mode)
          ("\\.md\\'" . markdown-mode)
@@ -471,6 +470,12 @@
   (add-hook 'markdown-mode-hook 'flyspell-mode))
 #+END_SRC
 
+** FIXME highlight
+#+BEGIN_SRC emacs-lisp
+(use-package fic-mode
+  :init
+  (add-hook 'prog-mode-hook 'fic-mode))
+#+END_SRC
 * Extras
 ** Functions
 #+BEGIN_SRC emacs-lisp
@@ -521,6 +526,9 @@
 
 (global-set-key (kbd "<C-S-down>") 'move-line-down)
 (global-set-key (kbd "<C-S-up>") 'move-line-up)
+
+(setq compilation-read-command nil)
+(global-set-key (kbd "C-c m") 'compile)
 #+END_SRC
 
 ** Show lines when prompting
@@ -534,4 +542,25 @@
         (linum-mode 1)
         (goto-line (read-number "Goto line: ")))
     (linum-mode -1)))
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(require 'ansi-color)
+(defun endless/colorize-compilation ()
+  "Colorize from `compilation-filter-start' to `point'."
+  (let ((inhibit-read-only t))
+    (ansi-color-apply-on-region
+     compilation-filter-start (point))))
+
+(add-hook 'compilation-filter-hook
+          #'endless/colorize-compilation)
+#+END_SRC
+** Automatically convert line endings to unix
+#+BEGIN_SRC emacs-lisp
+(defun no-junk-please-were-unixish ()
+  (let ((coding-str (symbol-name buffer-file-coding-system)))
+    (when (string-match "-\\(?:dos\\|mac\\)$" coding-str)
+      (set-buffer-file-coding-system 'unix))))
+
+(add-hook 'find-file-hooks 'no-junk-please-were-unixish)
 #+END_SRC
