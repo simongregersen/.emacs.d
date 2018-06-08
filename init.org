@@ -337,20 +337,25 @@
 
 ** Coq
 #+BEGIN_SRC emacs-lisp
+(load-file "~/.emacs.d/lib/PG/generic/proof-site.el")
 (use-package proof-site
   :ensure f
   :defer t
   :mode ("\\.v\\'" . coq-mode)
-  :load-path "~/.emacs.d/lib/PG/generic"
+  :load-path "~/.emacs.d/lib/PG/generic/"
   :config
   (setq proof-splash-seen t)
   (setq proof-three-window-mode-policy 'hybrid)
   (setq proof-script-fly-past-comments t)
   (setq coq-compile-before-require t)
-
+   (defun my/coq-mode-setup ()
+     (define-key coq-mode-map (kbd "M-n") #'proof-assert-next-command-interactive)
+     (define-key coq-mode-map (kbd "M-p") #'proof-undo-last-successful-command))
+  (add-hook 'coq-mode-hook #'my/coq-mode-setup)
   (use-package company-coq
-    :ensure t
     :config
+    (setq company-coq-disabled-features '(hello)
+          company-coq-live-on-the-edge t)
     (add-hook 'coq-mode-hook #'company-coq-mode)
     (add-hook 'coq-mode-hook
               (lambda ()
@@ -563,4 +568,9 @@
       (set-buffer-file-coding-system 'unix))))
 
 (add-hook 'find-file-hooks 'no-junk-please-were-unixish)
+#+END_SRC
+** orgmode
+#+BEGIN_SRC emacs-lisp
+;; fontify code in code blocks
+(setq org-src-fontify-natively t)
 #+END_SRC
