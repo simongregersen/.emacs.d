@@ -290,6 +290,7 @@
   (setq TeX-save-query nil)
   (setq-default TeX-master nil)
   (setq TeX-electric-sub-and-superscript t)
+  (custom-set-variables '(LaTeX-command "latex -synctex=1"))
   (add-hook 'LaTeX-mode-hook
             (lambda ()
               (company-mode)
@@ -413,10 +414,11 @@
   (setq idris-stay-in-current-window-on-compiler-error t)
   (setq idris-prover-restore-window-configuration t)
 
-  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-repl*")
-  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-notes*")
-  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-info*")
-  (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-holes*"))
+;;; (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-repl*")
+;;; (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-notes*")
+;;; (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-info*")
+;;; (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-holes*")
+)
 
 
 (add-hook 'idris-mode-hook #'my-idris-mode-hook))
@@ -462,6 +464,55 @@
         :ensure t
         :init (add-to-list 'company-backends 'company-tern)))
 #+END_SRC
+
+** TypeScript
+#+BEGIN_SRC emacs-lisp
+(use-package typescript-mode
+  :config
+  (setq typescript-indent-level 2)
+  (add-hook 'typescript-mode-hook (lambda () (set (make-local-variable 'compile-command) "npm test"))))
+
+(use-package tide
+  :config
+  (defun setup-tide-mode ()
+    (interactive)
+    (tide-setup)
+    (flycheck-mode +1)
+    (setq flycheck-check-syntax-automatically '(save mode-enabled))
+    (eldoc-mode +1)
+    (tide-hl-identifier-mode +1)
+    (company-mode +1))
+  (setq company-tooltip-align-annotations t)
+  (add-hook 'before-save-hook 'tide-format-before-save)
+  (add-hook 'typescript-mode-hook #'setup-tide-mode))
+
+#+END_SRC
+
+# (defun setup-tide-mode ()
+#   (interactive)
+#   (tide-setup)
+#   (flycheck-mode +1)
+#   (setq flycheck-check-syntax-automatically '(save mode-enabled))
+#   (eldoc-mode +1)
+#   (tide-hl-identifier-mode +1)
+#   ;; company is an optional dependency. You have to
+#   ;; install it separately via package-install
+#   ;; `M-x package-install [ret] company`
+#   (company-mode +1))
+
+# ;; aligns annotation to the right hand side
+# (setq company-tooltip-align-annotations t)
+
+# ;; formats the buffer before saving
+
+
+# (add-hook 'typescript-mode-hook #'setup-tide-mode)
+
+# (use-package tide
+#   :after (typescript-mode company flycheck)
+#   :hook ((typescript-mode . tide-setup)
+#          (typescript-mode . tide-hl-identifier-mode)
+#          (before-save . tide-format-before-save)))
 
 ** TIP
 #+BEGIN_SRC emacs-lisp
