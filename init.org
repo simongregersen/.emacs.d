@@ -149,6 +149,53 @@
 (add-hook 'focus-out-hook (lambda () (interactive) (save-some-buffers t)))
 #+END_SRC
 
+** Ivy + Swiper + Counsel
+#+BEGIN_SRC emacs-lisp
+(use-package ivy
+  :demand
+  :config
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-height 12)
+  (setq ivy-count-format "%d/%d | ")
+  (setq ivy-extra-directories nil)
+  (setq ivy-display-style 'fancy)
+  (setq magit-completing-read-function 'ivy-completing-read))
+
+(use-package swiper
+  :demand
+  :config
+  )
+
+(use-package counsel
+  :demand
+  :defer t
+  :bind*
+  (( "C-s" . counsel-grep-or-swiper)
+   ( "M-g g" . counsel-rg)
+   ( "M-i" . counsel-imenu)
+   ( "M-x" . counsel-M-x)
+   ( "C-x C-f" . counsel-find-file)
+   ( "<f1> f" . counsel-describe-function)
+   ( "<f1> v" . counsel-describe-variable)
+   ( "<f1> l" . counsel-load-library)
+   ( "<f2> i" . counsel-info-lookup-symbol)
+   ( "<f2> u" . counsel-unicode-char)
+   ( "C-h b" . counsel-descbinds)
+   ( "C-c g" . counsel-git)
+   ( "C-c j" . counsel-git-grep)
+   ( "C-c k" . counsel-ag)
+   ( "C-x l" . locate-counsel)
+   ( "C-r" . ivy-resume)
+   ( "C-c v" . ivy-push-view)
+   ( "C-c V" . ivy-pop-view)
+   ( "C-x b" . ivy-switch-buffer)
+   ( "C-c g" . counsel-git)
+   ( "C-c j" . counsel-git-grep)
+   ("M-y" . counsel-yank-pop)
+   :map ivy-minibuffer-map
+   ("M-y" . ivy-next-line)
+   ))
+#+END_SRC
 * Appearance
 ** Fonts
 #+BEGIN_SRC emacs-lisp
