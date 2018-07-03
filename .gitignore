@@ -57,3 +57,5 @@ ido.last
 network-security.data
 /abbrev_defs/
 /custom.el
+/ivy-views
+/recentf
