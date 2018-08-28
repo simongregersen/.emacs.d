@@ -123,7 +123,10 @@
 
 ** Ignored file extensions
 #+BEGIN_SRC emacs-lisp
-(push ".ibc" completion-ignored-extensions) ;;
+(push ".ibc" completion-ignored-extensions) ;; idris bytecode
+(push ".aux" completion-ignored-extensions) ;; latex
+(setq counsel-find-file-ignore-regexp "\\.ibc\\'")
+(setq counsel-find-file-ignore-regexp "\\.aux\\'")
 #+END_SRC
 
 ** Miscellaneous
@@ -150,6 +153,7 @@
 (setq-default indent-tabs-mode nil)  ; tabs over spaces
 (delete-selection-mode +1)           ; type over a selected region, instead of deleting before typing.
 (add-to-list 'default-frame-alist '(fullscreen . maximized)) ; start full screen
+(global-auto-revert-mode t)          ; automatically reload buffers when file has changed
 
 (global-unset-key (kbd "<M-drag-mouse-1>"))   ; was mouse-set-secondary
 (global-unset-key (kbd "<M-down-mouse-1>"))   ; was mouse-drag-secondary
@@ -309,8 +313,8 @@
 #+BEGIN_SRC emacs-lisp
 (use-package pretty-mode
   :ensure t
+  :hook ((code-mode . turn-on-pretty-mode))
   :config
-  (add-hook 'coq-mode 'turn-on-pretty-mode)
   (pretty-activate-groups
    '(:sub-and-superscripts :greek :arithmetic-nary)))
 #+END_SRC
@@ -463,36 +467,41 @@
 #+END_SRC
 
 ** Coq
-#(load-file "~/.emacs.d/lib/PG/generic/proof-site.el")
 #+BEGIN_SRC emacs-lisp
-  (use-package proof-site
-    :ensure f
-    :defer t
-    :mode ("\\.v\\'" . coq-mode)
-    :load-path "~/.emacs.d/lib/PG/generic/"
-    :config
-    (setq proof-splash-seen t)
-    (setq proof-three-window-mode-policy 'hybrid)
-    (setq proof-script-fly-past-comments t)
-    (setq coq-compile-before-require t)
-     (defun my/coq-mode-setup ()
-       (define-key coq-mode-map (kbd "M-n") #'proof-assert-next-command-interactive)
-       (define-key coq-mode-map (kbd "M-p") #'proof-undo-last-successful-command))
-    (add-hook 'coq-mode-hook #'my/coq-mode-setup)
-    (use-package company-coq
-        :config
-        (setq company-coq-disabled-features '(hello)
-              company-coq-live-on-the-edge t)
-        (add-hook 'coq-mode-hook #'company-coq-mode)
-        (add-hook 'coq-mode-hook
-                  (lambda ()
-                    (setq-local prettify-symbols-alist
-                                '(("Proof." . ?∵) ("Qed." . ?■))))))
+(use-package proof-site
+  :ensure f
+  :mode ("\\.v\\'" . coq-mode)
+  ;; location of Proof General installation
+  :load-path "~/.emacs.d/lib/PG/generic/"
+  :config
+  ;; remove splash screen
+  (setq proof-splash-seen t)
+  ;; window-mode setup
+  (setq proof-three-window-mode-policy 'hybrid)
+  ;; fly past comments when stepping forwads/backwards in proof
+  (setq proof-script-fly-past-comments t)
+  ;; compile dependencies before Require
+  (setq coq-compile-before-require t)
+  (defun my/coq-mode-setup ()
+    ;; forward and backward shortcuts
+    (define-key coq-mode-map (kbd "M-n") #'proof-assert-next-command-interactive)
+    (define-key coq-mode-map (kbd "M-p") #'proof-undo-last-successful-command))
+  (add-hook 'coq-mode-hook #'my/coq-mode-setup))
 
-      (defconst company-coq-tg--preprocessor-substitutions
-        '(("\n"  . " ") ("[ "  . "( OR-GROUP ") (" ]"  . " )")
-          (" | " . " OR ") ("; "  . " AND ") ("'" . "’")))
-      )
+(use-package company-coq
+  :defer t
+  :init
+  (add-hook 'coq-mode-hook 'company-coq-mode)
+  (add-hook 'coq-mode-hook (lambda ()
+                             (setq-local prettify-symbols-alist
+                                        ; also prettify "Proof." and "Qed."
+                                         '(("Proof." . ?∵) ("Qed." . ?■)))))
+  :config
+  ;; disable company-coqgreeting
+  (setq company-coq-disabled-features '(hello))
+  ;; enable features features like autocompletion of externally
+  ;; defined symbols, tactics, notations etc.
+  (setq company-coq-live-on-the-edge t))
 #+END_SRC
 
 ** Haskell
@@ -750,4 +759,7 @@
 #+BEGIN_SRC emacs-lisp
 ;; fontify code in code blocks
 (setq org-src-fontify-natively t)
+(setq org-src-tab-acts-natively t)
+(setq org-src-preserve-indentation nil
+      org-edit-src-content-indentation 0)
 #+END_SRC
