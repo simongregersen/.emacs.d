@@ -27,6 +27,7 @@
 #+BEGIN_SRC emacs-lisp
 (require 'package)
 
+(add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 
 (unless (assoc-default "melpa" package-archives)
@@ -35,6 +36,11 @@
 (setq package-enable-at-startup nil)
 
 (package-initialize)
+#+END_SRC
+#+BEGIN_SRC emacs-lisp
+(require 'gnutls)
+(add-to-list 'gnutls-trustfiles "/usr/local/etc/openssl/cert.pem")
+(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
 #+END_SRC
 
 ** Use package
@@ -99,7 +105,9 @@
 (cond
  ((eq window-system 'ns) ; macosx
   ;; Invoke login shells, so that .profile or .bash_profile is read
-  (setq shell-command-switch "-lc")))
+  (setq shell-command-switch "-lc")
+  (setq dired-use-ls-dired nil)
+))
 
 (defun toggle-fullscreen (&optional f)
   (interactive)
@@ -354,6 +362,20 @@
   (global-undo-tree-mode))
 #+END_SRC
 
+** Projectile
+#+BEGIN_SRC emacs-lisp
+(use-package projectile
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :config
+  (setq projectile-mode-line
+        '(:eval (if (projectile-project-p)
+                    (format " [%s]"
+                            (projectile-project-name))
+                  "")))
+  (projectile-mode)
+  )
+#+END_SRC
 * Coding
 ** Smartparens
 #+BEGIN_SRC emacs-lisp
@@ -397,6 +419,7 @@
   (TeX-command-menu "LaTeX"))
 
 (use-package tex
+  :pin gnu
   :ensure auctex
   :mode ("\\.tex\\'" . latex-mode)
   ;; :diminish reftex-mode
@@ -517,7 +540,8 @@
   (defun my/coq-mode-setup ()
     ;; forward and backward shortcuts
     (define-key coq-mode-map (kbd "M-n") #'proof-assert-next-command-interactive)
-    (define-key coq-mode-map (kbd "M-p") #'proof-undo-last-successful-command))
+    (define-key coq-mode-map (kbd "M-p") #'proof-undo-last-successful-command)
+    (define-key coq-mode-map (kbd "C-x p") #'proof-three-window-toggle) )
   (add-hook 'coq-mode-hook #'my/coq-mode-setup))
 
 (use-package company-coq
@@ -594,13 +618,6 @@
 
 
 (add-hook 'idris-mode-hook #'my-idris-mode-hook))
-#+END_SRC
-
-** SML
-#+BEGIN_SRC emacs-lisp
-(use-package sml-mode
-  :mode "\\.sml\\'"
-  :interpreter "sml")
 #+END_SRC
 
 ** Lisp
@@ -686,15 +703,11 @@
 #          (typescript-mode . tide-hl-identifier-mode)
 #          (before-save . tide-format-before-save)))
 
-** TIP
+** ML
 #+BEGIN_SRC emacs-lisp
-(use-package tip-mode
-  :ensure f
-  :load-path "~/.emacs.d/lib/tip-mode"
-  :config
-  (add-to-list 'auto-mode-alist '("\\.tip\\'" . tip-mode)))
+(use-package tuareg
+  :mode ("\\.ml\\'" . tuareg-mode))
 #+END_SRC
-
 ** Markdown
 #+BEGIN_SRC emacs-lisp
 (use-package markdown-mode
@@ -918,4 +931,11 @@
       (backward-kill-word 1)))))
 
 (global-set-key (kbd "C-<backspace>") 'contextual-backspace)
+#+END_SRC
+** docker
+#+BEGIN_SRC emacs-lisp
+(use-package docker
+  :bind ("C-c d" . docker))
+
+(use-package docker-compose-mode)
 #+END_SRC
