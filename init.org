@@ -138,8 +138,10 @@
 #+BEGIN_SRC emacs-lisp
 (push ".ibc" completion-ignored-extensions) ;; idris bytecode
 (push ".aux" completion-ignored-extensions) ;; latex
-(setq counsel-find-file-ignore-regexp "\\.ibc\\'")
-(setq counsel-find-file-ignore-regexp "\\.aux\\'")
+(push ".vo" completion-ignored-extensions)
+(push ".vok" completion-ignored-extensions)
+(push ".vos" completion-ignored-extensions)
+
 #+END_SRC
 
 ** Miscellaneous
@@ -244,19 +246,28 @@
    ("M-y" . counsel-yank-pop)
    :map ivy-minibuffer-map
    ("M-y" . ivy-next-line)
-   ))
+   )
+   :config
+   (setq counsel-find-file-ignore-regexp "\\.vo\\|\\.aux\\|\\.glob\\|.DS_STORE")
+   )
 
 (use-package wgrep)
 #+END_SRC
 * Appearance
 ** Fonts
 #+BEGIN_SRC emacs-lisp
-;; set a default font
+;; default font
+(prefer-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+
+;; ;; set a default font
 (when (member "DejaVu Sans Mono" (font-family-list))
   (set-face-attribute 'default nil :font "DejaVu Sans Mono"))
 ;; specify font for all unicode characters
-(when (member "Symbola" (font-family-list))
-  (set-fontset-font t 'unicode "Symbola" nil 'prepend))
+(when (member "DejaVu Sans Mono" (font-family-list))
+  (set-fontset-font t 'unicode "DejaVu Sans Mono" nil 'prepend))
 (set-face-attribute 'default nil :height 120)    ; font size
 
 #+END_SRC
@@ -373,6 +384,7 @@
                     (format " [%s]"
                             (projectile-project-name))
                   "")))
+  (setq projectile-completion-system 'ivy)
   (projectile-mode)
   )
 #+END_SRC
@@ -541,7 +553,8 @@
     ;; forward and backward shortcuts
     (define-key coq-mode-map (kbd "M-n") #'proof-assert-next-command-interactive)
     (define-key coq-mode-map (kbd "M-p") #'proof-undo-last-successful-command)
-    (define-key coq-mode-map (kbd "C-x p") #'proof-three-window-toggle) )
+    (define-key coq-mode-map (kbd "C-x p") #'proof-three-window-toggle)
+    (add-hook 'coq-mode-hook (lambda () (set-input-method "TeX"))))
   (add-hook 'coq-mode-hook #'my/coq-mode-setup))
 
 (use-package company-coq
@@ -567,10 +580,10 @@
 
 ** Scala
 #+BEGIN_SRC emacs-lisp
-(use-package ensime
-  :pin melpa-stable
-  :config
-  (setq ensime-startup-notification nil))
+;; (use-package ensime
+;;   :pin melpa-stable
+;;   :config
+;;   (setq ensime-startup-notification nil))
 
 (use-package scala-mode
   :interpreter
@@ -660,48 +673,7 @@
   :config
   (setq typescript-indent-level 2)
   (add-hook 'typescript-mode-hook (lambda () (set (make-local-variable 'compile-command) "npm test"))))
-
-(use-package tide
-  :config
-  (defun setup-tide-mode ()
-    (interactive)
-    (tide-setup)
-    (flycheck-mode +1)
-    (setq flycheck-check-syntax-automatically '(save mode-enabled))
-    (eldoc-mode +1)
-    (tide-hl-identifier-mode +1)
-    (company-mode +1))
-  (setq company-tooltip-align-annotations t)
-  (add-hook 'before-save-hook 'tide-format-before-save)
-  (add-hook 'typescript-mode-hook #'setup-tide-mode))
-
 #+END_SRC
-
-# (defun setup-tide-mode ()
-#   (interactive)
-#   (tide-setup)
-#   (flycheck-mode +1)
-#   (setq flycheck-check-syntax-automatically '(save mode-enabled))
-#   (eldoc-mode +1)
-#   (tide-hl-identifier-mode +1)
-#   ;; company is an optional dependency. You have to
-#   ;; install it separately via package-install
-#   ;; `M-x package-install [ret] company`
-#   (company-mode +1))
-
-# ;; aligns annotation to the right hand side
-# (setq company-tooltip-align-annotations t)
-
-# ;; formats the buffer before saving
-
-
-# (add-hook 'typescript-mode-hook #'setup-tide-mode)
-
-# (use-package tide
-#   :after (typescript-mode company flycheck)
-#   :hook ((typescript-mode . tide-setup)
-#          (typescript-mode . tide-hl-identifier-mode)
-#          (before-save . tide-format-before-save)))
 
 ** ML
 #+BEGIN_SRC emacs-lisp
@@ -786,31 +758,20 @@
 #+END_SRC
 
 ** Show lines when prompting
- #+BEGIN_SRC emacs-lisp
- (global-set-key [remap goto-line] 'goto-line-with-feedback)
- (defun goto-line-with-feedback ()
-   "Show line numbers temporarily, while prompting for the line number input."
-   (interactive)
-   (unwind-protect
-       (progn
-         (linum-mode 1)
-         (goto-line (read-number "Goto line: ")))
-     (linum-mode -1)))
- #+END_SRC
+#+BEGIN_SRC emacs-lisp
+(global-set-key [remap goto-line] 'goto-line-with-feedback)
+(defun goto-line-with-feedback ()
+  "Show line numbers temporarily, while prompting for the line number input."
+  (interactive)
+  (unwind-protect
+      (progn
+        (linum-mode 1)
+        (goto-line (read-number "Goto line: ")))
+    (linum-mode -1)))
+#+END_SRC
 
- #+BEGIN_SRC emacs-lisp
- (require 'ansi-color)
- (defun endless/colorize-compilation ()
-   "Colorize from `compilation-filter-start' to `point'."
-   (let ((inhibit-read-only t))
-     (ansi-color-apply-on-region
-      compilation-filter-start (point))))
-
- (add-hook 'compilation-filter-hook
-           #'endless/colorize-compilation)
- #+END_SRC
- # ** Automatically convert line endings to unix
-+BEGIN_SRC emacs-lisp
+** Automatically convert line endings to unix
+#+BEGIN_SRC emacs-lisp
 (defun no-junk-please-were-unixish ()
   (let ((coding-str (symbol-name buffer-file-coding-system)))
     (when (string-match "-\\(?:dos\\|mac\\)$" coding-str)
@@ -858,59 +819,64 @@
  'org-babel-load-languages
  '((R . t)
    (latex . t)))
-
 #+END_SRC
 
-** math input-method
+** TeX input-method
 #+BEGIN_SRC emacs-lisp
-(use-package math-symbol-lists
-  :config
-  ;; Automatically use math input method for Coq files
-  (add-hook 'coq-mode-hook (lambda () (set-input-method "math")))
-  ;; Input method for the minibuffer
-  ;; (defun my-inherit-input-method ()
-  ;;   "Inherit input method from `minibuffer-selected-window'."
-  ;;   (let* ((win (minibuffer-selected-window))
-  ;;          (buf (and win (window-buffer win))))
-  ;;     (when buf
-  ;;       (activate-input-method (buffer-local-value 'current-input-method buf)))))
-  ;; (add-hook 'minibuffer-setup-hook #'my-inherit-input-method)
-  ; Define the actual input method
-  (quail-define-package "math" "UTF-8" "Ω" t)
-  (quail-define-rules ; add whatever extra rules you want to define here...
-   ("\\mult"   ?⋅)
-   ("\\ent"    ?⊢)
-   ("\\valid"  ?✓)
-   ("\\box"    ?□)
-   ("\\later"  ?▷)
-   ("\\pred"   ?φ)
-   ("\\and"    ?∧)
-   ("\\or"     ?∨)
-   ("\\comp"   ?∘)
-   ("\\ccomp"  ?◎)
-   ("\\all"    ?∀)
-   ("\\ex"     ?∃)
-   ("\\to"     ?→)
-   ("\\sep"    ?∗)
-   ("\\lc"     ?⌜)
-   ("\\rc"     ?⌝)
-   ("\\lam"    ?λ)
-   ("\\empty"  ?∅)
-   ("\\Lam"    ?Λ)
-   ("\\Sig"    ?Σ)
-   ("\\-"      ?∖)
-   ("\\aa"     ?●)
-   ("\\af"     ?◯)
-   ("\\iff"    ?↔)
-   ("\\gname"  ?γ)
-   ("\\incl"   ?≼)
-   ("\\latert" ?▶)
-   ("\\_r"     ?ᵣ)
-   )
-  (mapc (lambda (x)
-          (if (cddr x)
-              (quail-defrule (cadr x) (car (cddr x)))))
-        (append math-symbol-list-basic math-symbol-list-extended)))
+;; Moves subscript _a to \_a
+(defvar sm-quail-activate-hook-done nil)
+(defun sm-quail-activate-hook ()
+  (unless (member (quail-name) sm-quail-activate-hook-done)
+    (push (quail-name) sm-quail-activate-hook-done)
+    (when (member (quail-name) '("TeX")) \_
+      ;; Copy the "_..." bindings to "\_...".
+      (setf (alist-get ?_ (cdr (alist-get ?\\ (quail-map))))
+            (alist-get ?_ (quail-map)))
+      ;; Remove the "_..." bindings.
+      (setf (alist-get ?_ (quail-map)) nil)
+      (let ((quail-current-package (assoc "TeX" quail-package-alist)))
+        (quail-define-rules ((append . t))
+                            ("^\\alpha" ?ᵅ)
+                            ("\\Phi" ?Φ)
+                            ("\\fun"    ?λ)
+                            ("\\mult"   ?⋅)
+                            ("\\ent"    ?⊢)
+                            ("\\valid"  ?✓)
+                            ("\\diamond" ?◇)
+                            ("\\box"    ?□)
+                            ("\\bbox"   ?■)
+                            ("\\later"  ?▷)
+                            ("\\pred"   ?φ)
+                            ("\\and"    ?∧)
+                            ("\\or"     ?∨)
+                            ("\\comp"   ?∘)
+                            ("\\ccomp"  ?◎)
+                            ("\\all"    ?∀)
+                            ("\\ex"     ?∃)
+                            ("\\to"     ?→)
+                            ("\\sep"    ?∗)
+                            ("\\lc"     ?⌜)
+                            ("\\rc"     ?⌝)
+                            ("\\Lc"     ?⎡)
+                            ("\\Rc"     ?⎤)
+                            ("\\lam"    ?λ)
+                            ("\\empty"  ?∅)
+                            ("\\Lam"    ?Λ)
+                            ("\\Sig"    ?Σ)
+                            ("\\-"      ?∖)
+                            ("\\aa"     ?●)
+                            ("\\af"     ?◯)
+                            ("\\auth"   ?●)
+                            ("\\frag"   ?◯)
+                            ("\\iff"    ?↔)
+                            ("\\gname"  ?γ)
+                            ("\\incl"   ?≼)
+                            ("\\latert" ?▶)
+                            ("\\update" ?⇝)
+
+                            ))
+      )))
+(add-hook 'quail-activate-hook #'sm-quail-activate-hook)
 
 #+END_SRC
 ** Hungry/Contextual backspace
@@ -931,7 +897,7 @@
      (t
       (backward-kill-word 1)))))
 
-(global-set-key (kbd "C-<backspace>") 'contextual-backspace)
+(global-set-key (kbd "C-<backspace>") 'contextual-backspace) ;
 #+END_SRC
 ** docker
 #+BEGIN_SRC emacs-lisp
