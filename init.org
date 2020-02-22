@@ -271,7 +271,6 @@
 (set-face-attribute 'default nil :height 120)    ; font size
 
 #+END_SRC
-**
 ** Powerline
 #+BEGIN_SRC emacs-lisp
 (use-package powerline
@@ -287,8 +286,6 @@
               t)
   (doom-themes-neotree-config)
   (global-hl-line-mode t)
-  ;; (set-cursor-color "#FF0000")         ;
-  ;; (set-face-attribute 'hl-line nil :inherit nil :background "#6A0000")
 )
 #+END_SRC
 
@@ -300,7 +297,7 @@
         company-echo-delay 0
         company-dabbrev-downcase nil
         company-minimum-prefix-length 3
-        ompany-tooltip-limit 20
+        company-tooltip-limit 20
         company-selection-wrap-around t
         company-transformers '(company-sort-by-occurrence
                                company-sort-by-backend-importance))
@@ -346,16 +343,6 @@
 
 #+END_SRC
 
-** Pretty-mode
-#+BEGIN_SRC emacs-lisp
-(use-package pretty-mode
-  :ensure t
-  :hook ((code-mode . turn-on-pretty-mode))
-  :config
-  (pretty-activate-groups
-   '(:sub-and-superscripts :greek :arithmetic-nary)))
-#+END_SRC
-
 ** Flyspell
 #+BEGIN_SRC emacs-lisp
 (add-hook 'text-mode-hook 'flyspell-mode)
@@ -389,21 +376,6 @@
   )
 #+END_SRC
 * Coding
-** Smartparens
-#+BEGIN_SRC emacs-lisp
-(use-package smartparens)
-#+END_SRC
-
-** YASnippets
-#+BEGIN_SRC emacs-lisp
-(use-package yasnippet
-  :ensure t
-  :init
-  (yas-global-mode 1)
-  :config
-  (add-to-list 'yas-snippet-dirs (locate-user-emacs-file "snippets")))
-#+END_SRC
-
 ** LaTeX
 #+BEGIN_SRC emacs-lisp
 (use-package pdf-tools
@@ -561,16 +533,11 @@
   :defer t
   :init
   (add-hook 'coq-mode-hook 'company-coq-mode)
-  ;; (add-hook 'coq-mode-hook (lambda ()
-  ;;                            (setq-local prettify-symbols-alist
-  ;;                                       ; also prettify "Proof." and "Qed."
-  ;;                                        '(("Proof." . ?∵) ("Qed." . ?■)))))
   :config
-  ;; disable company-coqgreeting
   (setq company-coq-disabled-features '(prettify-symbols))
   ;; enable features features like autocompletion of externally
   ;; defined symbols, tactics, notations etc.
-  (setq company-coq-live-on-the-edge t))
+  (setq company-coq-live-on-the-edge nil))
 #+END_SRC
 
 ** Haskell
