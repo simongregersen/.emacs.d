@@ -63,13 +63,6 @@
 #+END_SRC
 
 * Preferences
-** Encodings
-#+BEGIN_SRC emacs-lisp
-(prefer-coding-system 'utf-8)
-(set-default-coding-systems 'utf-8)
-(set-terminal-coding-system 'utf-8)
-(set-keyboard-coding-system 'utf-8)
-#+END_SRC
 
 ** Time
 #+BEGIN_SRC emacs-lisp
@@ -128,6 +121,28 @@
 (setq auto-save-list-file-prefix emacs-tmp-dir)
 #+END_SRC
 
+** SSH
+#+BEGIN_SRC emacs-lisp
+(use-package crux)
+(require 's)
+
+(defun my--reopen-remote-file-as-root ()
+  "Reopen a remote file as root over tramp."
+  (find-alternate-file (let* ((parts (s-split ":" buffer-file-name))
+            (hostname (nth 1 parts))
+            (filepath (car (last parts))))
+           (concat "/ssh" ":" hostname "|" "sudo" ":" hostname ":" filepath))))
+
+
+(defun my/reopen-file-as-root ()
+  "Reopen a local or remote file as root."
+  (interactive)
+  (if (file-remote-p default-directory)
+      (progn
+    (my--reopen-remote-file-as-root)))
+  (crux-reopen-as-root))
+#+END_SRC
+
 ** Custom-file
 #+BEGIN_SRC emacs-lisp
 (setq custom-file (concat user-emacs-directory "custom.el"))
@@ -151,8 +166,8 @@
 (transient-mark-mode t)              ; show selection from mark
 (if (display-graphic-p)
     (progn
-      (tool-bar-mode -1)             ; disable toolbar
-      (menu-bar-mode -1)             ; disable menu bar
+      (tool-bar-mode -1)             ; enable/disable toolbar
+      (menu-bar-mode 1)              ; enable/disable menu bar
       (scroll-bar-mode -1)))         ; disable scroll bar
 (blink-cursor-mode 0)                ; disable blinking cursor
 (mouse-avoidance-mode 'jump)         ; jump mouse away when typing
@@ -179,7 +194,7 @@
 
 (setq-default fill-column 80)       ; default fill-column width, standard is 80
 
-(add-hook 'focus-out-hook (lambda () (interactive) (save-some-buffers t)))
+;; (add-hook 'focus-out-hook (lambda () (interactive) (save-some-buffers t)))
 #+END_SRC
 
 ** Ivy + Swiper + Counsel
@@ -256,19 +271,18 @@
 * Appearance
 ** Fonts
 #+BEGIN_SRC emacs-lisp
-;; default font
+(set-language-environment "UTF-8")
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
 (set-terminal-coding-system 'utf-8)
 (set-keyboard-coding-system 'utf-8)
 
-;; ;; set a default font
+;; set a default font
 (when (member "DejaVu Sans Mono" (font-family-list))
-  (set-face-attribute 'default nil :font "DejaVu Sans Mono"))
-;; specify font for all unicode characters
-(when (member "DejaVu Sans Mono" (font-family-list))
-  (set-fontset-font t 'unicode "DejaVu Sans Mono" nil 'prepend))
-(set-face-attribute 'default nil :height 120)    ; font size
+  (let ((my-font "DejaVu Sans Mono-12"))
+    (set-face-attribute 'default nil :font my-font)
+    (set-fontset-font t 'unicode my-font nil 'prepend)
+    ))
 
 #+END_SRC
 ** Powerline
@@ -355,7 +369,7 @@
   :bind (("C-x u" . undo-tree-visualize)
          ("C--" . undo)
          ("C-+" . redo))
-  :config
+  :init
   (setq undo-tree-visualizer-diff 1)
   (global-undo-tree-mode))
 #+END_SRC
@@ -390,8 +404,8 @@
   :config
   (setq mouse-wheel-follow-mouse t)
   ;; open pdfs scaled to fit page
-  (setq-default pdf-view-display-size 'fit-page)
-  (setq pdf-view-resize-factor 1.5)
+  ;; (setq-default pdf-view-display-size 'fit-page)
+  ;; (setq pdf-view-resize-factor 1.5)
   ;; no line numbers on pdfs
   (add-hook 'pdf-view-mode-hook (lambda() (linum-mode -1)))
   )
@@ -408,8 +422,8 @@
   :mode ("\\.tex\\'" . latex-mode)
   ;; :diminish reftex-mode
   :bind (:map TeX-mode-map
-        ;; ("M-q" . ales/fill-paragraph)
-        ("<C-return>" . run-latex))
+              ("C-q" . ales/fill-paragraph)
+              ("<C-return>" . TeX-texify))
   :config
   (setq TeX-auto-save t)
   (setq TeX-parse-self t)
@@ -432,6 +446,7 @@
               (setq TeX-PDF-mode t)
               (setq TeX-source-correlate-method 'synctex)
               (setq TeX-source-correlate-start-server t)))
+
   (add-hook 'LaTeX-mode-hook
             (lambda ()
               (add-hook 'kill-buffer-hook 'TeX-clean nil 'make-it-local)))
@@ -469,12 +484,77 @@
                 ))))
       ;; otherwise do ordinary fill paragraph
       (fill-paragraph P)))
-)
+  )
 
 (use-package reftex
   :defer t
   :config
   (setq reftex-cite-prompt-optional-args t)); Prompt for empty optional arguments in cite
+
+(use-package biblio)
+
+(defun TeX-command-default (name)
+  "Next TeX command to use. Most of the code is stolen from `TeX-command-query'."
+  (cond ((if (string-equal name TeX-region)
+             (TeX-check-files (concat name "." (TeX-output-extension))
+                              (list name)
+                              TeX-file-extensions)
+           (TeX-save-document (TeX-master-file)))
+         TeX-command-default)
+        ((and (memq major-mode '(doctex-mode latex-mode))
+              (TeX-check-files (concat name ".bbl")
+                               (mapcar 'car
+                                       (LaTeX-bibliography-list))
+                               BibTeX-file-extensions))
+         ;; We should check for bst files here as well.
+         TeX-command-BibTeX)
+        ((TeX-process-get-variable name
+                                   'TeX-command-next
+                                   TeX-command-Show))
+        (TeX-command-Show)))
+
+
+(defcustom TeX-texify-Show nil "Start view-command at end of TeX-texify?" :type 'boolean :group 'TeX-command)
+(defcustom TeX-texify-max-runs-same-command 5 "Maximal run number of the same command" :type 'integer :group 'TeX-command)
+
+(defun TeX-texify-sentinel (&optional proc sentinel)
+  "Non-interactive! Call the standard-sentinel of the current LaTeX-process.
+If there is still something left do do start the next latex-command."
+  (set-buffer (process-buffer proc))
+  (funcall TeX-texify-sentinel proc sentinel)
+  (let ((case-fold-search nil))
+    (when (string-match "\\(finished\\|exited\\)" sentinel)
+      (set-buffer TeX-command-buffer)
+      (unless (plist-get TeX-error-report-switches (intern (TeX-master-file)))
+        (TeX-texify)))))
+
+(defun TeX-texify ()
+  "Get everything done."
+  (interactive)
+  (let ((nextCmd (TeX-command-default (TeX-master-file)))
+        proc)
+    (if (and (null TeX-texify-Show)
+             (equal nextCmd TeX-command-Show))
+        (when  (called-interactively-p 'any)
+          (message "TeX-texify: Nothing to be done."))
+      (TeX-command nextCmd 'TeX-master-file)
+      (when (or (called-interactively-p 'any)
+                (null (boundp 'TeX-texify-count-same-command))
+                (null (boundp 'TeX-texify-last-command))
+                (null (equal nextCmd TeX-texify-last-command)))
+        (mapc 'make-local-variable '(TeX-texify-sentinel TeX-texify-count-same-command TeX-texify-last-command))
+        (setq TeX-texify-count-same-command 1))
+      (if (>= TeX-texify-count-same-command TeX-texify-max-runs-same-command)
+          (message "TeX-texify: Did %S already %d times. Don't want to do it anymore." TeX-texify-last-command TeX-texify-count-same-command)
+        (setq TeX-texify-count-same-command (1+ TeX-texify-count-same-command))
+        (setq TeX-texify-last-command nextCmd)
+        (and (null (equal nextCmd TeX-command-Show))
+             (setq proc (get-buffer-process (current-buffer)))
+             (setq TeX-texify-sentinel (process-sentinel proc))
+             (set-process-sentinel proc 'TeX-texify-sentinel))))))
+
+(provide 'TeX-texify)
+
 #+END_SRC
 
 ** Magit
@@ -482,10 +562,10 @@
 (use-package magit
   :ensure t
   :config
-  (defadvice magit-status (around magit-fullscreen activate)
-    (window-configuration-to-register :magit-fullscreen)
-    ad-do-it
-    (delete-other-windows))
+  ;; (defadvice magit-status (around magit-fullscreen activate)
+  ;;   (window-configuration-to-register :magit-fullscreen)
+  ;;   ad-do-it
+  ;;   (delete-other-windows))
   (defun magit-quit-session ()
     "Restores the previous window configuration and kills the magit buffer"
     (interactive)
@@ -494,6 +574,18 @@
   (define-key magit-status-mode-map (kbd "q") 'magit-quit-session)
   (setq magit-refresh-status-buffer nil)
   (setq vc-handled-backends nil)
+  (setq magit-display-buffer-function
+        (lambda (buffer)
+          (display-buffer
+           buffer (if (and (derived-mode-p 'magit-mode)
+                           (memq (with-current-buffer buffer major-mode)
+                                 '(magit-process-mode
+                                   magit-revision-mode
+                                   magit-diff-mode
+                                   magit-stash-mode
+                                   magit-status-mode)))
+                      nil
+                    '(display-buffer-same-window)))))
   :bind (("C-x g" . magit-status)
          ("C-c g b" . magit-branch-and-checkout)
          ("C-c g c" . magit-checkout)
@@ -508,13 +600,12 @@
 
 ** Coq
 #+BEGIN_SRC emacs-lisp
-(use-package proof-site
+(use-package proof-general
   :ensure f
   :mode ("\\.v\\'" . coq-mode)
-  :load-path "~/.emacs.d/lib/PG/generic/"
-  :config
+  :init
   ;; remove splash screen
-  (setq proof-splash-seen t)
+  (setq proof-splash-enable nil)
   ;; window-mode setup
   (setq proof-three-window-mode-policy 'hybrid)
   ;; fly past comments when stepping forwads/backwards in proof
@@ -526,8 +617,91 @@
     (define-key coq-mode-map (kbd "M-n") #'proof-assert-next-command-interactive)
     (define-key coq-mode-map (kbd "M-p") #'proof-undo-last-successful-command)
     (define-key coq-mode-map (kbd "C-x p") #'proof-three-window-toggle)
-    (add-hook 'coq-mode-hook (lambda () (set-input-method "TeX"))))
+)
+  (add-hook 'coq-mode-hook (lambda () (set-input-method "TeX")))
   (add-hook 'coq-mode-hook #'my/coq-mode-setup))
+
+;; Moves subscript _a to \_a
+(defvar sm-quail-activate-hook-done nil)
+(defun sm-quail-activate-hook ()
+  (unless (member (quail-name) sm-quail-activate-hook-done)
+    (push (quail-name) sm-quail-activate-hook-done)
+    (when (member (quail-name) '("TeX"))
+      ;; Copy the "_..." bindings to "\_...".
+      (setf (alist-get ?_ (cdr (alist-get ?\\ (quail-map))))
+            (alist-get ?_ (quail-map)))
+      ;; Remove the "_..." bindings.
+      (setf (alist-get ?_ (quail-map)) nil)
+      )))
+(add-hook 'quail-activate-hook #'sm-quail-activate-hook)
+
+(use-package math-symbol-lists
+  :config
+
+
+  ;; Automatically use math input method for Coq files
+  ;; (add-hook 'coq-mode-hook (lambda () (set-input-method "math")))
+
+  (quail-define-package "math" "UTF-8" "Ω" t)
+  (quail-define-rules ; add whatever extra rules you want to define here...
+   ("\\fun"    ?λ)
+   ("\\mult"   ?⋅)
+   ("\\ent"    ?⊢)
+   ("\\valid"  ?✓)
+   ("\\diamond" ?◇)
+   ("\\box"    ?□)
+   ("\\bbox"   ?■)
+   ("\\later"  ?▷)
+   ("\\pred"   ?φ)
+   ("\\and"    ?∧)
+   ("\\or"     ?∨)
+   ("\\comp"   ?∘)
+   ("\\ccomp"  ?◎)
+   ("\\all"    ?∀)
+   ("\\ex"     ?∃)
+   ("\\to"     ?→)
+   ("\\sep"    ?∗)
+   ("\\lc"     ?⌜)
+   ("\\rc"     ?⌝)
+   ("\\Lc"     ?⎡)
+   ("\\Rc"     ?⎤)
+   ("\\lam"    ?λ)
+   ("\\empty"  ?∅)
+   ("\\Lam"    ?Λ)
+   ("\\Sig"    ?Σ)
+   ("\\-"      ?∖)
+   ("\\aa"     ?●)
+   ("\\af"     ?◯)
+   ("\\auth"   ?●)
+   ("\\frag"   ?◯)
+   ("\\iff"    ?↔)
+   ("\\gname"  ?γ)
+   ("\\incl"   ?≼)
+   ("\\latert" ?▶)
+   ("\\update" ?⇝)
+   ("\\lBr ?⟦)
+  ("\\rBr ?⟧)
+
+  ("\\DDelta" ?Δ)
+
+  ;; accents (for iLöb)
+  ("\\\"o" ?ö)
+
+  ;; subscripts and superscripts
+  ("^^+" ?⁺) ("__+" ?₊) ("^^-" ?⁻)
+  ("__0" ?₀) ("__1" ?₁) ("__2" ?₂) ("__3" ?₃) ("__4" ?₄)
+  ("__5" ?₅) ("__6" ?₆) ("__7" ?₇) ("__8" ?₈) ("__9" ?₉)
+
+  ("__a" ?ₐ) ("__e" ?ₑ) ("__h" ?ₕ) ("__i" ?ᵢ) ("__k" ?ₖ)
+  ("__l" ?ₗ) ("__m" ?ₘ) ("__n" ?ₙ) ("__o" ?ₒ) ("__p" ?ₚ)
+  ("__r" ?ᵣ) ("__s" ?ₛ) ("__t" ?ₜ) ("__u" ?ᵤ) ("__v" ?ᵥ) ("__x" ?ₓ)
+  )
+(mapc (lambda (x)
+        (if (cddr x)
+            (quail-defrule (cadr x) (car (cddr x)))))
+      (append math-symbol-list-basic math-symbol-list-extended))
+)
+
 
 (use-package company-coq
   :defer t
@@ -537,7 +711,7 @@
   (setq company-coq-disabled-features '(prettify-symbols))
   ;; enable features features like autocompletion of externally
   ;; defined symbols, tactics, notations etc.
-  (setq company-coq-live-on-the-edge nil))
+  (setq company-coq-live-on-the-edge t))
 #+END_SRC
 
 ** Haskell
@@ -589,11 +763,6 @@
                '(".*". (display-buffer-reuse-window . ((reusable-frames . t)))))
   (setq idris-stay-in-current-window-on-compiler-error t)
   (setq idris-prover-restore-window-configuration t)
-
-;;; (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-repl*")
-;;; (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-notes*")
-;;; (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-info*")
-;;; (add-to-list 'frames-only-mode-kill-frame-when-buffer-killed-buffer-list "*idris-holes*")
 )
 
 
@@ -642,6 +811,12 @@
   (add-hook 'typescript-mode-hook (lambda () (set (make-local-variable 'compile-command) "npm test"))))
 #+END_SRC
 
+** php
+#+BEGIN_SRC emacs-lisp
+(use-package php-mode
+  :mode
+  ("\\.php\\'" . php-mode))
+#+END_SRC
 ** ML
 #+BEGIN_SRC emacs-lisp
 (use-package tuareg
@@ -703,6 +878,41 @@
           (rename-buffer new-name)
           (set-visited-file-name new-name)
           (set-buffer-modified-p nil))))))
+
+(defun duplicate-line (arg)
+  "Duplicate current line, leaving point in lower line."
+  (interactive "*p")
+
+  ;; save the point for undo
+  (setq buffer-undo-list (cons (point) buffer-undo-list))
+
+  ;; local variables for start and end of line
+  (let ((bol (save-excursion (beginning-of-line) (point)))
+        eol)
+    (save-excursion
+
+      ;; don't use forward-line for this, because you would have
+      ;; to check whether you are at the end of the buffer
+      (end-of-line)
+      (setq eol (point))
+
+      ;; store the line and disable the recording of undo information
+      (let ((line (buffer-substring bol eol))
+            (buffer-undo-list t)
+            (count arg))
+        ;; insert the line arg times
+        (while (> count 0)
+          (newline)         ;; because there is no newline in 'line'
+          (insert line)
+          (setq count (1- count)))
+        )
+
+      ;; create the undo information
+      (setq buffer-undo-list (cons (cons eol (point)) buffer-undo-list)))
+    ) ; end-of-let
+
+  ;; put the point in the lowest line and return
+  (next-line arg))
 #+END_SRC
 
 ** Keybindings
@@ -722,6 +932,8 @@
 (global-set-key (kbd "C-c m") 'compile)
 
 (global-set-key (kbd "M-*") 'pop-tag-mark)
+
+(global-set-key (kbd "C-c d") 'duplicate-line)
 #+END_SRC
 
 ** Show lines when prompting
@@ -791,61 +1003,67 @@
 ** TeX input-method
 #+BEGIN_SRC emacs-lisp
 ;; Moves subscript _a to \_a
-(defvar sm-quail-activate-hook-done nil)
-(defun sm-quail-activate-hook ()
-  (unless (member (quail-name) sm-quail-activate-hook-done)
-    (push (quail-name) sm-quail-activate-hook-done)
-    (when (member (quail-name) '("TeX")) \_
-      ;; Copy the "_..." bindings to "\_...".
-      (setf (alist-get ?_ (cdr (alist-get ?\\ (quail-map))))
-            (alist-get ?_ (quail-map)))
-      ;; Remove the "_..." bindings.
-      (setf (alist-get ?_ (quail-map)) nil)
-      (let ((quail-current-package (assoc "TeX" quail-package-alist)))
-        (quail-define-rules ((append . t))
-                            ("^\\alpha" ?ᵅ)
-                            ("\\Phi" ?Φ)
-                            ("\\fun"    ?λ)
-                            ("\\mult"   ?⋅)
-                            ("\\ent"    ?⊢)
-                            ("\\valid"  ?✓)
-                            ("\\diamond" ?◇)
-                            ("\\box"    ?□)
-                            ("\\bbox"   ?■)
-                            ("\\later"  ?▷)
-                            ("\\pred"   ?φ)
-                            ("\\and"    ?∧)
-                            ("\\or"     ?∨)
-                            ("\\comp"   ?∘)
-                            ("\\ccomp"  ?◎)
-                            ("\\all"    ?∀)
-                            ("\\ex"     ?∃)
-                            ("\\to"     ?→)
-                            ("\\sep"    ?∗)
-                            ("\\lc"     ?⌜)
-                            ("\\rc"     ?⌝)
-                            ("\\Lc"     ?⎡)
-                            ("\\Rc"     ?⎤)
-                            ("\\lam"    ?λ)
-                            ("\\empty"  ?∅)
-                            ("\\Lam"    ?Λ)
-                            ("\\Sig"    ?Σ)
-                            ("\\-"      ?∖)
-                            ("\\aa"     ?●)
-                            ("\\af"     ?◯)
-                            ("\\auth"   ?●)
-                            ("\\frag"   ?◯)
-                            ("\\iff"    ?↔)
-                            ("\\gname"  ?γ)
-                            ("\\incl"   ?≼)
-                            ("\\latert" ?▶)
-                            ("\\update" ?⇝)
+;; (defvar sm-quail-activate-hook-done nil)
+;; (defun sm-quail-activate-hook ()
+;;   (unless (member (quail-name) sm-quail-activate-hook-done)
+;;     (push (quail-name) sm-quail-activate-hook-done)
+;;     (when (member (quail-name) '("TeX")) \_
+;;       ;; Copy the "_..." bindings to "\_...".
+;;       (setf (alist-get ?_ (cdr (alist-get ?\\ (quail-map))))
+;;             (alist-get ?_ (quail-map)))
+;;       ;; Remove the "_..." bindings.
+;;       (setf (alist-get ?_ (quail-map)) nil)
+;;       (let ((quail-current-package (assoc "TeX" quail-package-alist)))
 
-                            ))
-      )))
-(add-hook 'quail-activate-hook #'sm-quail-activate-hook)
+;;         (quail-defrule "\\hline" ["------------------------"])
+;;         (quail-define-rules ((append . t))
+;;                             ("^\\alpha" ?ᵅ)
+;;                             ("\\Phi" ?Φ)
+;;                             ("\\fun"    ?λ)
+;;                             ("\\mult"   ?⋅)
+;;                             ("\\ent"    ?⊢)
+;;                             ("\\valid"  ?✓)
+;;                             ("\\diamond" ?◇)
+;;                             ("\\box"    ?□)
+;;                             ("\\bbox"   ?■)
+;;                             ("\\later"  ?▷)
+;;                             ("\\pred"   ?φ)
+;;                             ("\\and"    ?∧)
+;;                             ("\\or"     ?∨)
+;;                             ("\\comp"   ?∘)
+;;                             ("\\ccomp"  ?◎)
+;;                             ("\\all"    ?∀)
+;;                             ("\\ex"     ?∃)
+;;                             ("\\to"     ?→)
+;;                             ("\\sep"    ?∗)
+;;                             ("\\lc"     ?⌜)
+;;                             ("\\rc"     ?⌝)
+;;                             ("\\Lc"     ?⎡)
+;;                             ("\\Rc"     ?⎤)
+;;                             ("\\lam"    ?λ)
+;;                             ("\\empty"  ?∅)
+;;                             ("\\Lam"    ?Λ)
+;;                             ("\\Sig"    ?Σ)
+;;                             ("\\-"      ?∖)
+;;                             ("\\aa"     ?●)
+;;                             ("\\af"     ?◯)
+;;                             ("\\auth"   ?●)
+;;                             ("\\frag"   ?◯)
+;;                             ("\\iff"    ?↔)
+;;                             ("\\gname"  ?γ)
+;;                             ("\\incl"   ?≼)
+;;                             ("\\latert" ?▶)
+;;                             ("\\update" ?⇝)
+
+;;                             ))
+;;       )))
+;; (add-hook 'quail-activate-hook #'sm-quail-activate-hook)
 
 #+END_SRC
+
+#+RESULTS:
+| sm-quail-activate-hook |
+
 ** Hungry/Contextual backspace
 #+BEGIN_SRC emacs-lisp
 (defun contextual-backspace ()
