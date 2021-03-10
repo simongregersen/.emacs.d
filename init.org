@@ -27,6 +27,8 @@
 #+BEGIN_SRC emacs-lisp
 (require 'package)
 
+(add-to-list 'load-path (expand-file-name "lib" user-emacs-directory))
+
 (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 
@@ -53,6 +55,8 @@
 (require 'bind-key)
 
 (setq use-package-always-ensure t)
+
+(require 'subr-x)
 #+END_SRC
 
 ** Execution path from shell
@@ -60,6 +64,8 @@
 (use-package exec-path-from-shell
   :config
   (exec-path-from-shell-initialize))
+
+(setq default-directory "~/")
 #+END_SRC
 
 * Preferences
@@ -82,7 +88,7 @@
 
 ** Whitespace cleanup
 #+BEGIN_SRC emacs-lisp
-(add-hook 'before-save-hook 'whitespace-cleanup)
+;; (add-hook 'before-save-hook 'whitespace-cleanup)
 #+END_SRC
 
 ** macOS
@@ -124,7 +130,7 @@
 ** SSH
 #+BEGIN_SRC emacs-lisp
 (use-package crux)
-(require 's)
+(use-package s)
 
 (defun my--reopen-remote-file-as-root ()
   "Reopen a remote file as root over tramp."
@@ -361,6 +367,46 @@
 #+BEGIN_SRC emacs-lisp
 (add-hook 'text-mode-hook 'flyspell-mode)
 (setq flyspell-issue-message-flag nil)
+(define-key ctl-x-map "\C-i"
+  #'endless/ispell-word-then-abbrev)
+
+(defun endless/simple-get-word ()
+  (car-safe (save-excursion (ispell-get-word nil))))
+
+(defun endless/ispell-word-then-abbrev (p)
+  "Call `ispell-word', then create an abbrev for it.
+With prefix P, create local abbrev. Otherwise it will
+be global.
+If there's nothing wrong with the word at point, keep
+looking for a typo until the beginning of buffer. You can
+skip typos you don't want to fix with `SPC', and you can
+abort completely with `C-g'."
+  (interactive "P")
+  (let (bef aft)
+    (save-excursion
+      (while (if (setq bef (endless/simple-get-word))
+                 ;; Word was corrected or used quit.
+                 (if (ispell-word nil 'quiet)
+                     nil ; End the loop.
+                   ;; Also end if we reach `bob'.
+                   (not (bobp)))
+               ;; If there's no word at point, keep looking
+               ;; until `bob'.
+               (not (bobp)))
+        (backward-word)
+        (backward-char))
+      (setq aft (endless/simple-get-word)))
+    (if (and aft bef (not (equal aft bef)))
+        (let ((aft (downcase aft))
+              (bef (downcase bef)))
+          (define-abbrev
+            (if p local-abbrev-table global-abbrev-table)
+            bef aft)
+          (message "\"%s\" now expands to \"%s\" %sally"
+                   bef aft (if p "loc" "glob")))
+      (user-error "No typo at or before point"))))
+
+(setq save-abbrevs 'silently)
 #+END_SRC
 
 ** Undo tree
@@ -439,7 +485,7 @@
               (company-mode)
               ;; (visual-line-mode)
               (flyspell-mode)
-              (smartparens-mode)
+              ;; (smartparens-mode)
               (turn-on-reftex)
               (setq reftex-plug-into-AUCTeX t)
               (reftex-isearch-minor-mode)
@@ -489,7 +535,8 @@
 (use-package reftex
   :defer t
   :config
-  (setq reftex-cite-prompt-optional-args t)); Prompt for empty optional arguments in cite
+  (setq reftex-cite-prompt-optional-args t)
+  (setq reftex-bibliography-commands '("bibliography" "nobibliography" "addbibresource"))); Prompt for empty optional arguments in cite
 
 (use-package biblio)
 
@@ -601,7 +648,7 @@ If there is still something left do do start the next latex-command."
 ** Coq
 #+BEGIN_SRC emacs-lisp
 (use-package proof-general
-  :ensure f
+  ;; :ensure t
   :mode ("\\.v\\'" . coq-mode)
   :init
   ;; remove splash screen
@@ -617,7 +664,9 @@ If there is still something left do do start the next latex-command."
     (define-key coq-mode-map (kbd "M-n") #'proof-assert-next-command-interactive)
     (define-key coq-mode-map (kbd "M-p") #'proof-undo-last-successful-command)
     (define-key coq-mode-map (kbd "C-x p") #'proof-three-window-toggle)
+
 )
+  (add-hook 'coq-mode-hook (lambda () (undo-tree-mode 1)))
   (add-hook 'coq-mode-hook (lambda () (set-input-method "TeX")))
   (add-hook 'coq-mode-hook #'my/coq-mode-setup))
 
@@ -707,8 +756,8 @@ If there is still something left do do start the next latex-command."
   :defer t
   :init
   (add-hook 'coq-mode-hook 'company-coq-mode)
-  :config
-  (setq company-coq-disabled-features '(prettify-symbols))
+  :config  
+  (setq company-coq-disabled-features '(prettify-symbols spinner))
   ;; enable features features like autocompletion of externally
   ;; defined symbols, tactics, notations etc.
   (setq company-coq-live-on-the-edge t))
@@ -778,31 +827,6 @@ If there is still something left do do start the next latex-command."
   (setq slime-contribs '(slime-fancy)))
 #+END_SRC
 
-** JavaScript
-#+BEGIN_SRC emacs-lisp
-(use-package js2-mode
-  :ensure t
-  :config
-  (setq js-basic-indent 2)
-  (setq-default js2-basic-indent 2
-                js2-basic-offset 2
-                js2-auto-indent-p t
-                js2-cleanup-whitespace t
-                js2-enter-indents-newline t
-                js2-indent-on-enter-key t
-                js2-global-externs (list "window" "module" "require" "buster" "sinon" "assert" "refute" "setTimeout" "clearTimeout" "setInterval" "clearInterval" "location" "__dirname" "console" "JSON" "jQuery" "$"))
-  (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
-  (add-hook 'js2-mode-hook (lambda () (set (make-local-variable 'compile-command) "npm test"))))
-
-(use-package tern
-   :ensure t
-   :init (add-hook 'js2-mode-hook (lambda () (tern-mode t)))
-   :config
-     (use-package company-tern
-        :ensure t
-        :init (add-to-list 'company-backends 'company-tern)))
-#+END_SRC
-
 ** TypeScript
 #+BEGIN_SRC emacs-lisp
 (use-package typescript-mode
@@ -811,283 +835,315 @@ If there is still something left do do start the next latex-command."
   (add-hook 'typescript-mode-hook (lambda () (set (make-local-variable 'compile-command) "npm test"))))
 #+END_SRC
 
-** php
+** OCaml
 #+BEGIN_SRC emacs-lisp
-(use-package php-mode
-  :mode
-  ("\\.php\\'" . php-mode))
-#+END_SRC
-** ML
-#+BEGIN_SRC emacs-lisp
-(use-package tuareg
-  :mode ("\\.ml\\'" . tuareg-mode))
-#+END_SRC
-** Markdown
-#+BEGIN_SRC emacs-lisp
-(use-package markdown-mode
-  :commands (markdown-mode gfm-mode)
-  :mode (("README\\.md\\'" . gfm-mode)
-         ("\\.md\\'" . markdown-mode)
-         ("\\.txt\\'" . markdown-mode)
-         ("\\.markdown\\'" . markdown-mode))
-  :init
-  (setq markdown-command "multimarkdown")
-  :config
-  (add-hook 'markdown-mode-hook 'flyspell-mode))
-#+END_SRC
+(let ((opam-share (ignore-errors (car (process-lines "opam" "config" "var" "share")))))
+  (when (and opam-share (file-directory-p opam-share))
+    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+    (autoload 'merlin-mode "merlin" nil t nil)
+    (add-hook 'tuareg-mode-hook 'merlin-mode t)
+    (add-hook 'caml-mode-hook 'merlin-mode t)
+    (autoload 'ocp-setup-indent "ocp-indent" )
+    (autoload 'ocp-indent-caml-mode-setup "ocp-indent")
+    (add-hook 'tuareg-mode-hook 'ocp-setup-indent t)
+    (add-hook 'caml-mode-hook 'ocp-indent-caml-mode-setup  t)
+    (autoload 'ocp-index-mode "ocp-index")
+    (add-hook 'tuareg-mode-hook 'ocp-index-mode t)
+    (add-hook 'caml-mode-hook 'ocp-index-mode t)))
 
-** FIXME highlight
-#+BEGIN_SRC emacs-lisp
-(use-package fic-mode
-  :init
-  (add-hook 'prog-mode-hook 'fic-mode))
+(use-package tuareg
+  :mode (("\\.ml[ily]?$" . tuareg-mode)
+         ("\\.topml$" . tuareg-mode)
+         ("\\.ocamlinit$" . tuareg-mode)
+         ("^dune$" . dune-mode)
+         ("^dune-project$" . dune-mode)
+         ("^dune-workspace$" . dune-mode)))
+
+(use-package merlin
+  :custom
+  (merlin-completion-with-doc t)
+  (merlin-error-check-then-move nil)
+  (merlin-command 'opam)
+  (merlin-error-after-save t)
+  (merlin-locate-preference 'mli)
+  :bind (:map merlin-mode-map
+              ("M-." . merlin-locate)
+              ("M-," . merlin-pop-stack)
+              ("M-?" . merlin-occurrences)
+              ("C-c m j" . merlin-jump)
+              ("C-c m i" . merlin-locate-ident)
+              ("C-c m e" . merlin-iedit-occurrences)
+              ("C-c m d" . merlin-document)))
 #+END_SRC
+#+END_SRC
+** Clang
+#+begin_src emacs-lisp
+(use-package llvm-mode
+  :ensure nil
+  :mode "\\.ll\\'")
+#+end_src
+
 * Extras
 ** Functions
-#+BEGIN_SRC emacs-lisp
-(defun move-line-down ()
-  "Move current line a line down."
-  (interactive)
-  (let ((col (current-column)))
-    (save-excursion
-      (forward-line)
-      (transpose-lines 1))
-    (forward-line)
-    (move-to-column col)))
+   #+BEGIN_SRC emacs-lisp
+   (defun move-line-down ()
+     "Move current line a line down."
+     (interactive)
+     (let ((col (current-column)))
+       (save-excursion
+         (forward-line)
+         (transpose-lines 1))
+       (forward-line)
+       (move-to-column col)))
 
-(defun move-line-up ()
-  "Move current line a line up."
-  (interactive)
-  (let ((col (current-column)))
-    (save-excursion
-      (forward-line)
-      (transpose-lines -1))
-    (move-to-column col)))
+   (defun move-line-up ()
+     "Move current line a line up."
+     (interactive)
+     (let ((col (current-column)))
+       (save-excursion
+         (forward-line)
+         (transpose-lines -1))
+       (move-to-column col)))
 
-(defun rename-file-and-buffer (new-name)
-  "Renames both current buffer and file it's visiting to NEW-NAME."
-  (interactive "sNew name: ")
-  (let ((name (buffer-name))
-        (filename (buffer-file-name)))
-    (if (not filename)
-        (message "Buffer '%s' is not visiting a file!" name)
-      (if (get-buffer new-name)
-          (message "A buffer named '%s' already exists!" new-name)
-        (progn
-          (rename-file name new-name 1)
-          (rename-buffer new-name)
-          (set-visited-file-name new-name)
-          (set-buffer-modified-p nil))))))
+   (defun rename-file-and-buffer (new-name)
+     "Renames both current buffer and file it's visiting to NEW-NAME."
+     (interactive "sNew name: ")
+     (let ((name (buffer-name))
+           (filename (buffer-file-name)))
+       (if (not filename)
+           (message "Buffer '%s' is not visiting a file!" name)
+         (if (get-buffer new-name)
+             (message "A buffer named '%s' already exists!" new-name)
+           (progn
+             (rename-file name new-name 1)
+             (rename-buffer new-name)
+             (set-visited-file-name new-name)
+             (set-buffer-modified-p nil))))))
 
-(defun duplicate-line (arg)
-  "Duplicate current line, leaving point in lower line."
-  (interactive "*p")
+   (defun duplicate-line (arg)
+     "Duplicate current line, leaving point in lower line."
+     (interactive "*p")
 
-  ;; save the point for undo
-  (setq buffer-undo-list (cons (point) buffer-undo-list))
+     ;; save the point for undo
+     (setq buffer-undo-list (cons (point) buffer-undo-list))
 
-  ;; local variables for start and end of line
-  (let ((bol (save-excursion (beginning-of-line) (point)))
-        eol)
-    (save-excursion
+     ;; local variables for start and end of line
+     (let ((bol (save-excursion (beginning-of-line) (point)))
+           eol)
+       (save-excursion
 
-      ;; don't use forward-line for this, because you would have
-      ;; to check whether you are at the end of the buffer
-      (end-of-line)
-      (setq eol (point))
+         ;; don't use forward-line for this, because you would have
+         ;; to check whether you are at the end of the buffer
+         (end-of-line)
+         (setq eol (point))
 
-      ;; store the line and disable the recording of undo information
-      (let ((line (buffer-substring bol eol))
-            (buffer-undo-list t)
-            (count arg))
-        ;; insert the line arg times
-        (while (> count 0)
-          (newline)         ;; because there is no newline in 'line'
-          (insert line)
-          (setq count (1- count)))
-        )
+         ;; store the line and disable the recording of undo information
+         (let ((line (buffer-substring bol eol))
+               (buffer-undo-list t)
+               (count arg))
+           ;; insert the line arg times
+           (while (> count 0)
+             (newline)         ;; because there is no newline in 'line'
+             (insert line)
+             (setq count (1- count)))
+           )
 
-      ;; create the undo information
-      (setq buffer-undo-list (cons (cons eol (point)) buffer-undo-list)))
-    ) ; end-of-let
+         ;; create the undo information
+         (setq buffer-undo-list (cons (cons eol (point)) buffer-undo-list)))
+       ) ; end-of-let
 
-  ;; put the point in the lowest line and return
-  (next-line arg))
-#+END_SRC
+     ;; put the point in the lowest line and return
+     (next-line arg))
+   #+END_SRC
 
 ** Keybindings
-#+BEGIN_SRC emacs-lisp
-(global-set-key (kbd "M-j")
-                (lambda ()
-                  (interactive)
-                  (join-line -1)))
+   #+BEGIN_SRC emacs-lisp
+   (global-set-key (kbd "M-j")
+                   (lambda ()
+                     (interactive)
+                     (join-line -1)))
 
-(global-set-key (kbd "<C-S-down>") 'move-line-down)
-(global-set-key (kbd "<C-S-up>") 'move-line-up)
+   (global-set-key (kbd "<C-S-down>") 'move-line-down)
+   (global-set-key (kbd "<C-S-up>") 'move-line-up)
 
-(global-set-key (kbd "<C-S-down>") 'move-line-down)
-(global-set-key (kbd "<C-S-up>") 'move-line-up)
+   (global-set-key (kbd "<C-S-down>") 'move-line-down)
+   (global-set-key (kbd "<C-S-up>") 'move-line-up)
 
-(setq compilation-read-command nil)
-(global-set-key (kbd "C-c m") 'compile)
+   (setq compilation-read-command nil)
+   (global-set-key (kbd "C-c m") 'compile)
 
-(global-set-key (kbd "M-*") 'pop-tag-mark)
+   (global-set-key (kbd "M-*") 'pop-tag-mark)
 
-(global-set-key (kbd "C-c d") 'duplicate-line)
-#+END_SRC
+   (global-set-key (kbd "C-c d") 'duplicate-line)
+   #+END_SRC
 
 ** Show lines when prompting
-#+BEGIN_SRC emacs-lisp
-(global-set-key [remap goto-line] 'goto-line-with-feedback)
-(defun goto-line-with-feedback ()
-  "Show line numbers temporarily, while prompting for the line number input."
-  (interactive)
-  (unwind-protect
-      (progn
-        (linum-mode 1)
-        (goto-line (read-number "Goto line: ")))
-    (linum-mode -1)))
-#+END_SRC
+   #+BEGIN_SRC emacs-lisp
+   (global-set-key [remap goto-line] 'goto-line-with-feedback)
+   (defun goto-line-with-feedback ()
+     "Show line numbers temporarily, while prompting for the line number input."
+     (interactive)
+     (unwind-protect
+         (progn
+           (linum-mode 1)
+           (goto-line (read-number "Goto line: ")))
+       (linum-mode -1)))
+   #+END_SRC
 
 ** Automatically convert line endings to unix
-#+BEGIN_SRC emacs-lisp
-(defun no-junk-please-were-unixish ()
-  (let ((coding-str (symbol-name buffer-file-coding-system)))
-    (when (string-match "-\\(?:dos\\|mac\\)$" coding-str)
-      (set-buffer-file-coding-system 'unix))))
+   #+BEGIN_SRC emacs-lisp
+   (defun no-junk-please-were-unixish ()
+     (let ((coding-str (symbol-name buffer-file-coding-system)))
+       (when (string-match "-\\(?:dos\\|mac\\)$" coding-str)
+         (set-buffer-file-coding-system 'unix))))
 
-(add-hook 'find-file-hooks 'no-junk-please-were-unixish)
-#+END_SRC
+   (add-hook 'find-file-hooks 'no-junk-please-were-unixish)
+   #+END_SRC
 ** orgmode
-#+BEGIN_SRC emacs-lisp
-;; fontify code in code blocks
-(setq org-src-fontify-natively t)
-(setq org-src-tab-acts-natively t)
-(setq org-src-preserve-indentation nil
-      org-edit-src-content-indentation 0)
-(use-package htmlize)
-(require 'org)
-(require 'ox-latex)
-(add-to-list 'org-latex-packages-alist '("" "minted"))
-(setq org-latex-listings 'minted)
+   #+BEGIN_SRC emacs-lisp
+   ;; fontify code in code blocks
+   (setq org-src-fontify-natively t)
+   (setq org-src-tab-acts-natively t)
+   (setq org-src-preserve-indentation nil
+         org-edit-src-content-indentation 0)
+   (use-package htmlize)
+   (require 'org)
+   (require 'ox-latex)
+   (add-to-list 'org-latex-packages-alist '("" "minted"))
+   (setq org-latex-listings 'minted)
+   ;; remove javascript from html export   
+   ;; (setq org-html-head-include-scripts nil)
 
-(setq org-latex-pdf-process
-      '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
-        "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
-        "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+   (setq org-latex-pdf-process
+         '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+           "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+           "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
 
-(setq org-src-fontify-natively t)
+   (setq org-src-fontify-natively t)
 
-(add-to-list 'org-latex-classes
-             '("notes"
-               "\\documentclass[a4paper]{article}
-                \\usepackage[hyperfootnotes=false]{hyperref}
-                \\usepackage[svgnames]{xcolor}
-                \\usepackage[tt = false]{libertine}
-                \\usepackage{graphicx}
-                \\usepackage{parskip}
-               "
-               ("\\section{%s}" . "\\section*{%s}")
-               ("\\subsection{%s}" . "\\subsection*{%s}")
-               ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-               ("\\paragraph{%s}" . "\\paragraph*{%s}")
-               ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
-)
+   (add-to-list 'org-latex-classes
+                '("notes"
+                  "\\documentclass[a4paper]{article}
+                   \\usepackage[hyperfootnotes=false]{hyperref}
+                   \\usepackage[svgnames]{xcolor}
+                   \\usepackage[tt = false]{libertine}
+                   \\usepackage{graphicx}
+                   \\usepackage{parskip}
+                  "
+                  ("\\section{%s}" . "\\section*{%s}")
+                  ("\\subsection{%s}" . "\\subsection*{%s}")
+                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                  ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
+                )
 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((R . t)
-   (latex . t)))
-#+END_SRC
+   (org-babel-do-load-languages
+    'org-babel-load-languages
+    '((R . t)
+      (latex . t)))
+   #+END_SRC
 
+
+** Markdown
+   #+begin_src emacs-lisp
+   (use-package markdown-mode
+     :ensure t
+     :commands (markdown-mode gfm-mode)
+     :mode (("README\\.md\\'" . gfm-mode)
+            ("\\.md\\'" . markdown-mode)
+            ("\\.markdown\\'" . markdown-mode))
+     :init (setq markdown-command "multimarkdown"))
+   #+end_src
 ** TeX input-method
-#+BEGIN_SRC emacs-lisp
-;; Moves subscript _a to \_a
-;; (defvar sm-quail-activate-hook-done nil)
-;; (defun sm-quail-activate-hook ()
-;;   (unless (member (quail-name) sm-quail-activate-hook-done)
-;;     (push (quail-name) sm-quail-activate-hook-done)
-;;     (when (member (quail-name) '("TeX")) \_
-;;       ;; Copy the "_..." bindings to "\_...".
-;;       (setf (alist-get ?_ (cdr (alist-get ?\\ (quail-map))))
-;;             (alist-get ?_ (quail-map)))
-;;       ;; Remove the "_..." bindings.
-;;       (setf (alist-get ?_ (quail-map)) nil)
-;;       (let ((quail-current-package (assoc "TeX" quail-package-alist)))
+   #+BEGIN_SRC emacs-lisp
+   ;; Moves subscript _a to \_a
+   ;; (defvar sm-quail-activate-hook-done nil)
+   ;; (defun sm-quail-activate-hook ()
+   ;;   (unless (member (quail-name) sm-quail-activate-hook-done)
+   ;;     (push (quail-name) sm-quail-activate-hook-done)
+   ;;     (when (member (quail-name) '("TeX")) \_
+   ;;       ;; Copy the "_..." bindings to "\_...".
+   ;;       (setf (alist-get ?_ (cdr (alist-get ?\\ (quail-map))))
+   ;;             (alist-get ?_ (quail-map)))
+   ;;       ;; Remove the "_..." bindings.
+   ;;       (setf (alist-get ?_ (quail-map)) nil)
+   ;;       (let ((quail-current-package (assoc "TeX" quail-package-alist)))
 
-;;         (quail-defrule "\\hline" ["------------------------"])
-;;         (quail-define-rules ((append . t))
-;;                             ("^\\alpha" ?ᵅ)
-;;                             ("\\Phi" ?Φ)
-;;                             ("\\fun"    ?λ)
-;;                             ("\\mult"   ?⋅)
-;;                             ("\\ent"    ?⊢)
-;;                             ("\\valid"  ?✓)
-;;                             ("\\diamond" ?◇)
-;;                             ("\\box"    ?□)
-;;                             ("\\bbox"   ?■)
-;;                             ("\\later"  ?▷)
-;;                             ("\\pred"   ?φ)
-;;                             ("\\and"    ?∧)
-;;                             ("\\or"     ?∨)
-;;                             ("\\comp"   ?∘)
-;;                             ("\\ccomp"  ?◎)
-;;                             ("\\all"    ?∀)
-;;                             ("\\ex"     ?∃)
-;;                             ("\\to"     ?→)
-;;                             ("\\sep"    ?∗)
-;;                             ("\\lc"     ?⌜)
-;;                             ("\\rc"     ?⌝)
-;;                             ("\\Lc"     ?⎡)
-;;                             ("\\Rc"     ?⎤)
-;;                             ("\\lam"    ?λ)
-;;                             ("\\empty"  ?∅)
-;;                             ("\\Lam"    ?Λ)
-;;                             ("\\Sig"    ?Σ)
-;;                             ("\\-"      ?∖)
-;;                             ("\\aa"     ?●)
-;;                             ("\\af"     ?◯)
-;;                             ("\\auth"   ?●)
-;;                             ("\\frag"   ?◯)
-;;                             ("\\iff"    ?↔)
-;;                             ("\\gname"  ?γ)
-;;                             ("\\incl"   ?≼)
-;;                             ("\\latert" ?▶)
-;;                             ("\\update" ?⇝)
+   ;;         (quail-defrule "\\hline" ["------------------------"])
+   ;;         (quail-define-rules ((append . t))
+   ;;                             ("^\\alpha" ?ᵅ)
+   ;;                             ("\\Phi" ?Φ)
+   ;;                             ("\\fun"    ?λ)
+   ;;                             ("\\mult"   ?⋅)
+   ;;                             ("\\ent"    ?⊢)
+   ;;                             ("\\valid"  ?✓)
+   ;;                             ("\\diamond" ?◇)
+   ;;                             ("\\box"    ?□)
+   ;;                             ("\\bbox"   ?■)
+   ;;                             ("\\later"  ?▷)
+   ;;                             ("\\pred"   ?φ)
+   ;;                             ("\\and"    ?∧)
+   ;;                             ("\\or"     ?∨)
+   ;;                             ("\\comp"   ?∘)
+   ;;                             ("\\ccomp"  ?◎)
+   ;;                             ("\\all"    ?∀)
+   ;;                             ("\\ex"     ?∃)
+   ;;                             ("\\to"     ?→)
+   ;;                             ("\\sep"    ?∗)
+   ;;                             ("\\lc"     ?⌜)
+   ;;                             ("\\rc"     ?⌝)
+   ;;                             ("\\Lc"     ?⎡)
+   ;;                             ("\\Rc"     ?⎤)
+   ;;                             ("\\lam"    ?λ)
+   ;;                             ("\\empty"  ?∅)
+   ;;                             ("\\Lam"    ?Λ)
+   ;;                             ("\\Sig"    ?Σ)
+   ;;                             ("\\-"      ?∖)
+   ;;                             ("\\aa"     ?●)
+   ;;                             ("\\af"     ?◯)
+   ;;                             ("\\auth"   ?●)
+   ;;                             ("\\frag"   ?◯)
+   ;;                             ("\\iff"    ?↔)
+   ;;                             ("\\gname"  ?γ)
+   ;;                             ("\\incl"   ?≼)
+   ;;                             ("\\latert" ?▶)
+   ;;                             ("\\update" ?⇝)
 
-;;                             ))
-;;       )))
-;; (add-hook 'quail-activate-hook #'sm-quail-activate-hook)
+   ;;                             ))
+   ;;       )))
+   ;; (add-hook 'quail-activate-hook #'sm-quail-activate-hook)
 
-#+END_SRC
+   #+END_SRC
 
-#+RESULTS:
-| sm-quail-activate-hook |
+   #+RESULTS:
+   | sm-quail-activate-hook |
 
 ** Hungry/Contextual backspace
-#+BEGIN_SRC emacs-lisp
-(defun contextual-backspace ()
-  "Hungry whitespace or delete word depending on context."
-  (interactive)
-  (if (looking-back "[[:space:]\n]\\{2,\\}" (- (point) 2))
-      (while (looking-back "[[:space:]\n]" (- (point) 1))
-        (delete-char -1))
-    (cond
-     ((and (boundp 'smartparens-strict-mode)
-           smartparens-strict-mode)
-      (sp-backward-kill-word 1))
-     ((and (boundp 'subword-mode)
-           subword-mode)
-      (subword-backward-kill 1))
-     (t
-      (backward-kill-word 1)))))
+   #+BEGIN_SRC emacs-lisp
+   (defun contextual-backspace ()
+     "Hungry whitespace or delete word depending on context."
+     (interactive)
+     (if (looking-back "[[:space:]\n]\\{2,\\}" (- (point) 2))
+         (while (looking-back "[[:space:]\n]" (- (point) 1))
+           (delete-char -1))
+       (cond
+        ((and (boundp 'smartparens-strict-mode)
+              smartparens-strict-mode)
+         (sp-backward-kill-word 1))
+        ((and (boundp 'subword-mode)
+              subword-mode)
+         (subword-backward-kill 1))
+        (t
+         (backward-kill-word 1)))))
 
-(global-set-key (kbd "C-<backspace>") 'contextual-backspace) ;
-#+END_SRC
+   (global-set-key (kbd "C-<backspace>") 'contextual-backspace) ;
+   #+END_SRC
 ** docker
-#+BEGIN_SRC emacs-lisp
-(use-package docker
-  :bind ("C-c d" . docker))
-
-(use-package docker-compose-mode)
-#+END_SRC
+   #+BEGIN_SRC emacs-lisp
+   (use-package docker
+     :bind ("C-c d" . docker))
+   (use-package dockerfile-mode
+     :config
+     (add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode)))
+   (use-package docker-compose-mode)
+   #+END_SRC
