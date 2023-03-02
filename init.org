@@ -86,11 +86,6 @@
       select-enable-primary t)
 #+END_SRC
 
-** Whitespace cleanup
-#+BEGIN_SRC emacs-lisp
-;; (add-hook 'before-save-hook 'whitespace-cleanup)
-#+END_SRC
-
 ** macOS
 #+BEGIN_SRC emacs-lisp
 (setq mac-command-modifier 'meta)
@@ -157,7 +152,6 @@
 
 ** Ignored file extensions
 #+BEGIN_SRC emacs-lisp
-(push ".ibc" completion-ignored-extensions) ;; idris bytecode
 (push ".aux" completion-ignored-extensions) ;; latex
 (push ".vo" completion-ignored-extensions)
 (push ".vok" completion-ignored-extensions)
@@ -184,7 +178,7 @@
 (put 'set-goal-column 'disabled nil) ; enable column positioning
 (setq column-number-mode t)          ; show column number
 (setq case-fold-search t)            ; make search ignore case
-(global-linum-mode 0)                ; global line numbers
+; (global-linum-mode 0)                ; global line numbers
 (fset 'yes-or-no-p 'y-or-n-p)        ; short-hand yes/no selection
 (ido-mode 1)                         ; interactive DO mode (better file opening and buffer switching)
 (setq-default indent-tabs-mode nil)  ; tabs over spaces
@@ -763,78 +757,6 @@ If there is still something left do do start the next latex-command."
   (setq company-coq-live-on-the-edge t))
 #+END_SRC
 
-** Haskell
-#+BEGIN_SRC emacs-lisp
-(use-package haskell-mode)
-#+END_SRC
-
-** Scala
-#+BEGIN_SRC emacs-lisp
-;; (use-package ensime
-;;   :pin melpa-stable
-;;   :config
-;;   (setq ensime-startup-notification nil))
-
-(use-package scala-mode
-  :interpreter
-  ("scala" . scala-mode)
-  :config
-  (defun scala-mode-newline-comments ()
-    "Custom newline appropriate for `scala-mode'."
-    ;; shouldn't this be in a post-insert hook?
-    (interactive)
-    (newline-and-indent)
-    (scala-indent:insert-asterisk-on-multiline-comment))
-
-  (bind-key "RET" 'scala-mode-newline-comments scala-mode-map)
-  (defun scala-mode-newline-comments ()
-    "Custom newline appropriate for `scala-mode'."
-    ;; shouldn't this be in a post-insert hook?
-    (interactive)
-    (newline-and-indent)
-    (scala-indent:insert-asterisk-on-multiline-comment))
-
-  (bind-key "RET" 'scala-mode-newline-comments scala-mode-map))
-#+END_SRC
-
-** Idris
-#+BEGIN_SRC emacs-lisp
-(use-package idris-mode
-  :mode (("\\.idr$" . idris-mode)
-         ("\\.lidr$" . idris-mode))
-  :defer t
-  :config
-  (let ((my-cabal-path (expand-file-name "~/.cabal/bin")))
-   (setenv "PATH" (concat my-cabal-path path-separator (getenv "PATH")))
-   (add-to-list 'exec-path my-cabal-path))
-  (defun my-idris-mode-hook ()
-  (add-to-list 'display-buffer-alist
-               '(".*". (display-buffer-reuse-window . ((reusable-frames . t)))))
-  (setq idris-stay-in-current-window-on-compiler-error t)
-  (setq idris-prover-restore-window-configuration t)
-)
-
-
-(add-hook 'idris-mode-hook #'my-idris-mode-hook))
-#+END_SRC
-
-** Lisp
-#+BEGIN_SRC emacs-lisp
-(use-package slime
-  :ensure t
-  :config
-  (setq inferior-lisp-program "/usr/local/bin/sbcl")
-  (setq slime-contribs '(slime-fancy)))
-#+END_SRC
-
-** TypeScript
-#+BEGIN_SRC emacs-lisp
-(use-package typescript-mode
-  :config
-  (setq typescript-indent-level 2)
-  (add-hook 'typescript-mode-hook (lambda () (set (make-local-variable 'compile-command) "npm test"))))
-#+END_SRC
-
 ** OCaml
 #+BEGIN_SRC emacs-lisp
 (let ((opam-share (ignore-errors (car (process-lines "opam" "config" "var" "share")))))
@@ -875,13 +797,6 @@ If there is still something left do do start the next latex-command."
               ("C-c m e" . merlin-iedit-occurrences)
               ("C-c m d" . merlin-document)))
 #+END_SRC
-#+END_SRC
-** Clang
-#+begin_src emacs-lisp
-(use-package llvm-mode
-  :ensure nil
-  :mode "\\.ll\\'")
-#+end_src
 
 * Extras
 ** Functions
@@ -1054,69 +969,6 @@ If there is still something left do do start the next latex-command."
             ("\\.markdown\\'" . markdown-mode))
      :init (setq markdown-command "multimarkdown"))
    #+end_src
-** TeX input-method
-   #+BEGIN_SRC emacs-lisp
-   ;; Moves subscript _a to \_a
-   ;; (defvar sm-quail-activate-hook-done nil)
-   ;; (defun sm-quail-activate-hook ()
-   ;;   (unless (member (quail-name) sm-quail-activate-hook-done)
-   ;;     (push (quail-name) sm-quail-activate-hook-done)
-   ;;     (when (member (quail-name) '("TeX")) \_
-   ;;       ;; Copy the "_..." bindings to "\_...".
-   ;;       (setf (alist-get ?_ (cdr (alist-get ?\\ (quail-map))))
-   ;;             (alist-get ?_ (quail-map)))
-   ;;       ;; Remove the "_..." bindings.
-   ;;       (setf (alist-get ?_ (quail-map)) nil)
-   ;;       (let ((quail-current-package (assoc "TeX" quail-package-alist)))
-
-   ;;         (quail-defrule "\\hline" ["------------------------"])
-   ;;         (quail-define-rules ((append . t))
-   ;;                             ("^\\alpha" ?ᵅ)
-   ;;                             ("\\Phi" ?Φ)
-   ;;                             ("\\fun"    ?λ)
-   ;;                             ("\\mult"   ?⋅)
-   ;;                             ("\\ent"    ?⊢)
-   ;;                             ("\\valid"  ?✓)
-   ;;                             ("\\diamond" ?◇)
-   ;;                             ("\\box"    ?□)
-   ;;                             ("\\bbox"   ?■)
-   ;;                             ("\\later"  ?▷)
-   ;;                             ("\\pred"   ?φ)
-   ;;                             ("\\and"    ?∧)
-   ;;                             ("\\or"     ?∨)
-   ;;                             ("\\comp"   ?∘)
-   ;;                             ("\\ccomp"  ?◎)
-   ;;                             ("\\all"    ?∀)
-   ;;                             ("\\ex"     ?∃)
-   ;;                             ("\\to"     ?→)
-   ;;                             ("\\sep"    ?∗)
-   ;;                             ("\\lc"     ?⌜)
-   ;;                             ("\\rc"     ?⌝)
-   ;;                             ("\\Lc"     ?⎡)
-   ;;                             ("\\Rc"     ?⎤)
-   ;;                             ("\\lam"    ?λ)
-   ;;                             ("\\empty"  ?∅)
-   ;;                             ("\\Lam"    ?Λ)
-   ;;                             ("\\Sig"    ?Σ)
-   ;;                             ("\\-"      ?∖)
-   ;;                             ("\\aa"     ?●)
-   ;;                             ("\\af"     ?◯)
-   ;;                             ("\\auth"   ?●)
-   ;;                             ("\\frag"   ?◯)
-   ;;                             ("\\iff"    ?↔)
-   ;;                             ("\\gname"  ?γ)
-   ;;                             ("\\incl"   ?≼)
-   ;;                             ("\\latert" ?▶)
-   ;;                             ("\\update" ?⇝)
-
-   ;;                             ))
-   ;;       )))
-   ;; (add-hook 'quail-activate-hook #'sm-quail-activate-hook)
-
-   #+END_SRC
-
-   #+RESULTS:
-   | sm-quail-activate-hook |
 
 ** Hungry/Contextual backspace
    #+BEGIN_SRC emacs-lisp
