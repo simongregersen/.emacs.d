@@ -1,4 +1,4 @@
-O# -*- mode: org -*-
+# -*- mode: org -*-
 # -*- coding: utf-8 -*-
 #+TITLE:    Emacs configuration file
 #+AUTHOR:   Simon Gregersen
