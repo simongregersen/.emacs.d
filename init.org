@@ -1,4 +1,4 @@
-# -*- mode: org -*-
+O# -*- mode: org -*-
 # -*- coding: utf-8 -*-
 #+TITLE:    Emacs configuration file
 #+AUTHOR:   Simon Gregersen
@@ -192,7 +192,7 @@
 (global-unset-key (kbd "<M-mouse-2>"))        ; was mouse-yank-secondary
 (global-unset-key (kbd "<M-mouse-3>"))        ; was mouse-secondary-save-then-kill
 
-(setq-default fill-column 80)       ; default fill-column width, standard is 80
+(setq-default fill-column 100)       ; default fill-column width, standard is 80
 
 ;; (add-hook 'focus-out-hook (lambda () (interactive) (save-some-buffers t)))
 #+END_SRC
@@ -411,7 +411,8 @@ abort completely with `C-g'."
          ("C-+" . redo))
   :init
   (setq undo-tree-visualizer-diff 1)
-  (global-undo-tree-mode))
+  (global-undo-tree-mode)
+  (setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo"))))
 #+END_SRC
 
 ** Projectile
@@ -447,7 +448,7 @@ abort completely with `C-g'."
   ;; (setq-default pdf-view-display-size 'fit-page)
   ;; (setq pdf-view-resize-factor 1.5)
   ;; no line numbers on pdfs
-  (add-hook 'pdf-view-mode-hook (lambda() (linum-mode -1)))
+  (add-hook 'pdf-view-mode-hook (lambda() (display-line-numbers-mode -1)))
   )
 
 (defun run-latex ()
@@ -658,6 +659,8 @@ If there is still something left do do start the next latex-command."
     (define-key coq-mode-map (kbd "M-n") #'proof-assert-next-command-interactive)
     (define-key coq-mode-map (kbd "M-p") #'proof-undo-last-successful-command)
     (define-key coq-mode-map (kbd "C-x p") #'proof-three-window-toggle)
+    (modify-syntax-entry ?⌝ ")⌜" coq-mode-syntax-table)
+    (modify-syntax-entry ?⌜ "(⌝" coq-mode-syntax-table)
 
 )
   (add-hook 'coq-mode-hook (lambda () (undo-tree-mode 1)))
@@ -900,9 +903,9 @@ If there is still something left do do start the next latex-command."
      (interactive)
      (unwind-protect
          (progn
-           (linum-mode 1)
+           (display-line-numbers-mode 1)
            (goto-line (read-number "Goto line: ")))
-       (linum-mode -1)))
+       (display-line-numbers-mode -1)))
    #+END_SRC
 
 ** Automatically convert line endings to unix
